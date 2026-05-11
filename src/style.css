@@ -1,3 +1,13 @@
+body {
+    font-family: sans-serif;
+}
+
+#persistence-warning {
+    background-color: orange;
+    padding: 1em;
+    margin: 1em;
+}
+
 #controls {
     position: absolute;
     right: 10px;

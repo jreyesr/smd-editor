@@ -23,7 +23,7 @@ import {
 } from "excalibur";
 import {CircularPad, RectangularPad, VerticalLinePad} from "./pads";
 import {ElectricalComponent} from "./components/electrical";
-import {Pane, TextBladeApi} from "tweakpane";
+import {Pane} from "tweakpane";
 import {UndoRedoComponent} from "./components/undoredo";
 
 const PIXELS_PER_MM = 30;
@@ -392,14 +392,10 @@ export class SOIC extends Device {
         }
     }
 
+    public pinsSelector = "(all)"
     override setupParametersPane(pane: Pane) {
         pane.addBinding(this.label, "text", {label: "tag"});
-        (pane.addBlade({
-            view: "text",
-            label: "Visible pins",
-            parse: String,
-            value: "(all)"
-        }) as TextBladeApi<string>).on("change", e => {
+        pane.addBinding(this, "pinsSelector").on("change", e => {
             controlPins(e.value, this.pins)
         })
     }
@@ -484,14 +480,10 @@ export class DIP extends Device {
         }
     }
 
+    public pinsSelector = "(all)"
     override setupParametersPane(pane: Pane) {
         pane.addBinding(this.label, "text", {label: "tag"});
-        (pane.addBlade({
-            view: "text",
-            label: "Visible pins",
-            parse: String,
-            value: "(all)"
-        }) as TextBladeApi<string>).on("change", e => {
+        pane.addBinding(this, "pinsSelector").on("change", e => {
             controlPins(e.value, this.pins)
         })
     }
