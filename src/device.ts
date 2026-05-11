@@ -90,7 +90,7 @@ export class Device extends Actor {
         } else { // display it
             this.#nowSelected = "right"
             if (this.#paneContainer) {
-                this.#pane = new Pane({container: this.#paneContainer})
+                this.#pane = new Pane({container: this.#paneContainer, title: this.name})
                 this.setupParametersPane(this.#pane)
                 this.outline.strokeColor = Color.Azure
                 this.outline.lineWidth = 5
@@ -249,9 +249,11 @@ export class Passive extends Device {
     }
 
     private readonly label: Text
+    private readonly cathodeMark: Circle
 
     constructor(w: number, h: number, config: ActorArgs = {}) {
         const label = new Text({text: "R?", font: new Font({size: 10}), maxWidth: w,})
+        const cathodeMark = new Circle({radius: 5, color: Color.Transparent})
         super({
             name: "SMD 2-pin device",
             // @ts-expect-error
@@ -261,9 +263,14 @@ export class Passive extends Device {
             {
                 graphic: label,
                 offset: new Vector(w * 0.05, h * 0.05)
+            },
+            {
+                graphic: cathodeMark,
+                offset: new Vector(w * 0.025, h * 0.025)
             }
         ]);
         this.label = label
+        this.cathodeMark = cathodeMark
     }
 
     override onInitialize(engine: Engine) {
@@ -274,6 +281,9 @@ export class Passive extends Device {
 
     override setupParametersPane(pane: Pane) {
         pane.addBinding(this.label, "text", {label: "tag"});
+        const _params = {cathodeMark: false}
+        pane.addBinding(_params, "cathodeMark").on("change", (v) => this.cathodeMark.color = v.value ? Color.Black : Color.Transparent
+        )
     }
 }
 
