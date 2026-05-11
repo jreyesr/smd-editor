@@ -53,7 +53,7 @@ class SP1BoardPad extends Actor {
     }
 }
 
-export class ThrougHoleProtoboard extends Actor {
+export class ThroughHoleProtoboard extends Actor {
     private numPadsX = 20;
     private numPadsY = 14;
 

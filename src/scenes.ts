@@ -1,6 +1,6 @@
 import {Color, Engine, GraphicsComponent, Scene, SceneActivationContext, TransformComponent, Vector} from "excalibur";
 import {Device, mil} from "./device";
-import {SP1_50x50, ThrougHoleProtoboard} from "./board";
+import {SP1_50x50, ThroughHoleProtoboard} from "./board";
 import {ElectricalComponent, ElectricalSystem} from "./components/electrical";
 import {SolderLine} from "./solder";
 import {UndoRedoSystem} from "./components/undoredo";
@@ -15,7 +15,7 @@ export class BoardEditorScene extends Scene {
         this.world.add(ElectricalSystem)
         this.world.add(UndoRedoSystem)
 
-        this.add(new ThrougHoleProtoboard());
+        this.add(new SP1_50x50());
     }
 
     override onActivate(context: SceneActivationContext<unknown>): void {

@@ -6,7 +6,8 @@ import {
     CollisionGroup,
     CollisionType,
     Color,
-    Engine, Font,
+    Engine,
+    Font,
     Graphic,
     GraphicsGroup,
     GraphicsGrouping,
@@ -15,14 +16,14 @@ import {
     PointerEvent,
     Raster,
     Rectangle,
-    Text,
     RotationType,
     Shape,
+    Text,
     Vector
 } from "excalibur";
 import {CircularPad, RectangularPad, VerticalLinePad} from "./pads";
 import {ElectricalComponent} from "./components/electrical";
-import {Pane} from "tweakpane";
+import {Pane, TextBladeApi} from "tweakpane";
 import {UndoRedoComponent} from "./components/undoredo";
 
 const PIXELS_PER_MM = 30;
@@ -282,8 +283,32 @@ export class Passive extends Device {
     override setupParametersPane(pane: Pane) {
         pane.addBinding(this.label, "text", {label: "tag"});
         const _params = {cathodeMark: false}
-        pane.addBinding(_params, "cathodeMark").on("change", (v) => this.cathodeMark.color = v.value ? Color.Black : Color.Transparent
+        pane.addBinding(_params, "cathodeMark").on("change", (e) => this.cathodeMark.color = e.value ? Color.Black : Color.Transparent
         )
+    }
+}
+
+function controlPins(spec: string, pins: (RectangularPad | CircularPad)[]) {
+    if (!spec.match(/^(\(all\)|(\d+(-\d+)?)(,\d+(-\d+)?)*)$/)) return
+    if (spec === "(all)") {
+        for (let pin of pins) {
+            pin.graphics.isVisible = true
+            pin.body.collisionType = CollisionType.Passive
+        }
+    } else {
+        const visiblePins: number[] = []
+        for (let run of spec.split(",")) {
+            const endpoints = run.split("-")
+            if (endpoints.length == 1) visiblePins.push(parseInt(endpoints[0]))
+            else {
+                const start = parseInt(endpoints[0]), end = parseInt(endpoints[1])
+                visiblePins.push(...new Array(end - start + 1).fill(0).map((_, i) => i + start))
+            }
+        }
+        for (let i = 0; i < pins.length; i++) {
+            pins[i].graphics.isVisible = visiblePins.includes(i + 1)
+            pins[i].body.collisionType = visiblePins.includes(i + 1) ? CollisionType.Passive : CollisionType.PreventCollision
+        }
     }
 }
 
@@ -341,6 +366,8 @@ export class SOIC extends Device {
         this.label = label
     }
 
+    private pins: RectangularPad[] = []
+
     override onInitialize(engine: Engine) {
         super.onInitialize(engine);
 
@@ -352,18 +379,29 @@ export class SOIC extends Device {
             const isLeftSide = i < this.args.pinNames.length / 2 // e.g. for SOIC8: true, true, true, true, false, false, false, false
             const yIndex = isLeftSide ? i : this.args.pinNames.length - i - 1 // e.g. for SOIC8: 0, 1, 2, 3, 3, 2, 1, 0
 
-            this.addChild(new RectangularPad({
+            const pin = new RectangularPad({
                 // L and B dimensions respectively
-                width: .62 * mm, height: .42 * mm
+                width: .62 * mm, height: .42 * mm,
             }, {
-                x: pin1X * (isLeftSide ? -1 : 1),
-                y: pin1Y + 1.27 * mm * yIndex
-            }))
+                x: pin1X * (isLeftSide ? 1 : -1),
+                y: pin1Y + 1.27 * mm * yIndex,
+                name: `P${i + 1}`
+            })
+            this.addChild(pin)
+            this.pins.push(pin)
         }
     }
 
     override setupParametersPane(pane: Pane) {
         pane.addBinding(this.label, "text", {label: "tag"});
+        (pane.addBlade({
+            view: "text",
+            label: "Visible pins",
+            parse: String,
+            value: "(all)"
+        }) as TextBladeApi<string>).on("change", e => {
+            controlPins(e.value, this.pins)
+        })
     }
 }
 
@@ -421,6 +459,8 @@ export class DIP extends Device {
         this.label = label
     }
 
+    private pins: CircularPad[] = []
+
     override onInitialize(engine: Engine) {
         super.onInitialize(engine);
 
@@ -432,17 +472,27 @@ export class DIP extends Device {
             const isLeftSide = i < this.args.pinNames.length / 2 // e.g. for DIP8: true, true, true, true, false, false, false, false
             const yIndex = isLeftSide ? i : this.args.pinNames.length - i - 1 // e.g. for DIP8: 0, 1, 2, 3, 3, 2, 1, 0
 
-            this.addChild(new CircularPad({
+            const pin = new CircularPad({
                 // B dimension (Lower Lead Width)
                 radius: .46 * mm
             }, {
-                x: pin1X * (isLeftSide ? -1 : 1),
+                x: pin1X * (isLeftSide ? 1 : -1),
                 y: pin1Y + 100 * mil * yIndex
-            }))
+            })
+            this.addChild(pin)
+            this.pins.push(pin)
         }
     }
 
     override setupParametersPane(pane: Pane) {
         pane.addBinding(this.label, "text", {label: "tag"});
+        (pane.addBlade({
+            view: "text",
+            label: "Visible pins",
+            parse: String,
+            value: "(all)"
+        }) as TextBladeApi<string>).on("change", e => {
+            controlPins(e.value, this.pins)
+        })
     }
 }
