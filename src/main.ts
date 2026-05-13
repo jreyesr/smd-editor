@@ -16,6 +16,6 @@ const game = new Engine({
     snapToPixel: true,
 });
 
-await game.start('start', {
+game.start('start', {
     loader,
 })

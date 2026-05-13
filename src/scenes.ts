@@ -1,6 +1,6 @@
 import {Color, Engine, GraphicsComponent, Scene, SceneActivationContext, TransformComponent, Vector} from "excalibur";
 import {Device, mil} from "./device";
-import {SP1_50x50, ThroughHoleProtoboard} from "./board";
+import {SP1_50x50} from "./board";
 import {ElectricalComponent, ElectricalSystem} from "./components/electrical";
 import {SolderLine} from "./solder";
 import {UndoRedoSystem} from "./components/undoredo";
@@ -21,7 +21,7 @@ export class BoardEditorScene extends Scene {
     override onActivate(context: SceneActivationContext<unknown>): void {
         for (let deviceClass of Device.derived) {
             const btn = document.createElement("button")
-            btn.textContent = "+ " + deviceClass.name
+            btn.textContent = "+ " + deviceClass.displayName
             btn.onclick = (e) => {
                 const newDevice = new deviceClass({x: 100 * mil, y: 100 * mil})
                 newDevice.paneContainer = pane

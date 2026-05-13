@@ -35,6 +35,7 @@ export const devicesCollisionGroup = new CollisionGroup('physical', 1, 1)
 
 export class Device extends Actor {
     protected readonly outline: Raster
+    public static displayName: string
 
     #paneContainer?: HTMLElement
     set paneContainer(v: HTMLElement | undefined) {
@@ -193,6 +194,7 @@ export class SHT40 extends Device {
     static {
         this.derived.add(this)
     }
+    static override displayName = "SHT40"
 
     constructor(config: ActorArgs = {}) {
         super({
@@ -228,21 +230,29 @@ export class SHT40 extends Device {
 export class Passive extends Device {
     static {
         this.derived.add(class Passive0402 extends Passive {
+            static override displayName = "0402"
+
             constructor(config: ActorArgs = {}) {
                 super(.04 * inch, .02 * inch, config);
             }
         })
         this.derived.add(class Passive0603 extends Passive {
+            static override displayName = "0603"
+
             constructor(config: ActorArgs = {}) {
                 super(.06 * inch, .03 * inch, config);
             }
         })
         this.derived.add(class Passive0805 extends Passive {
+            static override displayName = "0805"
+
             constructor(config: ActorArgs = {}) {
                 super(.08 * inch, .05 * inch, config);
             }
         })
         this.derived.add(class Passive1206 extends Passive {
+            static override displayName = "1206"
+
             constructor(config: ActorArgs = {}) {
                 super(.12 * inch, .06 * inch, config);
             }
@@ -316,11 +326,15 @@ export class SOIC extends Device {
     static {
         // https://ww1.microchip.com/downloads/en/packagingspec/00049af.pdf
         this.derived.add(class SOIC8 extends SOIC {
+            static override displayName = "SOIC8"
+
             constructor(config: ActorArgs = {}) {
                 super({pinNames: ["1", "2", "3", "4", "5", "6", "7", "8"], bodySize: 4.9 * mm}, config);
             }
         })
         this.derived.add(class SOIC14 extends SOIC {
+            static override displayName = "SOIC14"
+
             constructor(config: ActorArgs = {}) {
                 super({
                     pinNames: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14"],
@@ -329,6 +343,8 @@ export class SOIC extends Device {
             }
         })
         this.derived.add(class SOIC16 extends SOIC {
+            static override displayName = "SOIC16"
+
             constructor(config: ActorArgs = {}) {
                 super({
                     pinNames: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16"],
@@ -393,6 +409,7 @@ export class SOIC extends Device {
     }
 
     public pinsSelector = "(all)"
+
     override setupParametersPane(pane: Pane) {
         pane.addBinding(this.label, "text", {label: "tag"});
         pane.addBinding(this, "pinsSelector").on("change", e => {
@@ -405,6 +422,8 @@ export class DIP extends Device {
     static {
         // https://ww1.microchip.com/downloads/en/packagingspec/00049af.pdf
         this.derived.add(class DIP8 extends DIP {
+            static override displayName = "DIP8"
+
             constructor(config: ActorArgs = {}) {
                 super({pinNames: ["1", "2", "3", "4", "5", "6", "7", "8"], bodySize: 9.46 * mm}, config);
             }
@@ -481,6 +500,7 @@ export class DIP extends Device {
     }
 
     public pinsSelector = "(all)"
+
     override setupParametersPane(pane: Pane) {
         pane.addBinding(this.label, "text", {label: "tag"});
         pane.addBinding(this, "pinsSelector").on("change", e => {
