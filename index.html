@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8"/>
-    <link rel="icon" href="./public/images/smd_resistor.png"/>
+    <link rel="icon" href="images/smd_resistor.png"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <link rel="stylesheet" href="./src/style.css">
     <title>SMD</title>
@@ -28,14 +28,15 @@
             <li>R/⇧+R → rotate ↻/↺ resp.</li>
             <li>Del/Bksp → delete</li>
             <li>WASD → move</li>
-            <li>Enter → unselect</li>
+            <li><input type="checkbox" id="debugQuadtree" value="on"><label for="debugQuadtree">quadtree</label></li>
+<!--            <li>Enter → unselect</li>-->
         </ul>
     </div>
     <div id="controls"></div>
-    <canvas id="game"></canvas>
+    <canvas id="editor"></canvas>
 </div>
 
-<script type="module" src="./src/main.ts"></script>
+<script type="module" src="src/main.ts"></script>
 <!-- Cloudflare Web Analytics -->
 <script defer src='https://static.cloudflareinsights.com/beacon.min.js'
         data-cf-beacon='{"token": "e3e4d831664a4b22acb43a4a5c13f16d"}'></script>

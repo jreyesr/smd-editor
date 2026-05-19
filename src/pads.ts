@@ -10,7 +10,7 @@ import {
     RectangleOptions,
     Vector
 } from "excalibur";
-import {pinsCollisionGroup} from "./board";
+import {pinsCollisionGroup} from "./board.ts.old";
 import {ElectricalComponent} from "./components/electrical";
 
 export class VerticalLinePad extends Actor {

@@ -2,7 +2,7 @@
   "name": "smd",
   "version": "0.0.0",
   "description": "",
-  "main": "src/main.ts",
+  "main": "src/main.ts.old",
   "scripts": {
     "dev": "vite",
     "start": "vite",
@@ -23,7 +23,9 @@
   "bugs": {},
   "homepage": "",
   "dependencies": {
+    "@timohausmann/quadtree-ts": "^2.3.0",
     "excalibur": "0.32.0",
+    "fabric": "^7.3.1",
     "tweakpane": "^4.0.5"
   },
   "devDependencies": {

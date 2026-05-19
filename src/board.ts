@@ -1,101 +1,61 @@
-import {
-    Actor, ActorArgs, Circle, CircleCollider,
-    CollisionGroup,
-    CollisionType, Color, Rectangle
-} from "excalibur";
+import {Group, Rect} from "fabric";
 import {mil} from "./device";
-import {ElectricalComponent} from "./components/electrical";
+import {collisionManager} from "./collisions";
 
-export const pinsCollisionGroup = new CollisionGroup('electrical', 2, 2)
-
-export class SP1_50x50 extends Actor {
-    private numPadsX = 20;
-    private numPadsY = 20;
+export class SP1_50x50 extends Group {
+    private static numPadsX = 20;
+    private static numPadsY = 20;
 
     constructor() {
-        super({
-            name: "SP1 50x50 board",
+        const pads = Array(SP1_50x50.numPadsX).fill(0).flatMap((_, i) =>
+            Array(SP1_50x50.numPadsY).fill(0).map((_, j) =>
+                new SP1BoardPad(50 * mil * i + 25 * mil, 50 * mil * j + 25 * mil)
+            )
+        )
+        super(pads, {
+            selectable: false,
+            // originX: "left", originY: "top",
+            // top: 0, left: 0
         });
-    }
-
-    onInitialize() {
-        Array(this.numPadsX).fill(0).forEach((_, i) => Array(this.numPadsY).fill(0).forEach((_, j) => {
-            this.addChild(new SP1BoardPad({x: 50 * mil * i + 25 * mil, y: 50 * mil * j + 25 * mil}))
-        }))
     }
 }
 
-class SP1BoardPad extends Actor {
-    readonly #outline;
-
-    constructor(config: ActorArgs = {}) {
+class SP1BoardPad extends Rect {
+    constructor(x: number, y: number) {
         super({
-            name: "SP1 50x50 pad",
-            collisionType: CollisionType.Passive,
-            collisionGroup: pinsCollisionGroup,
-            // @ts-expect-error
             width: 42 * mil, height: 42 * mil,
-            z: -1,
-            ...config
+            top: y, left: x,
+            fill: "white",
+            stroke: "orange",
+            // originX: "left", originY: "top"
         });
+        collisionManager.addElement(this)
 
-        this.#outline = new Rectangle({
-            width: 42 * mil,
-            height: 42 * mil,
-            strokeColor: Color.Orange,
-            lineWidth: 2,
-            color: Color.White
+        this.on("collision:on", function (this: SP1BoardPad, ev) {
+            // this.set("fill", "orange")
+            this.colorCollisions(ev.nowHitting.size)
         })
-        this.graphics.use(this.#outline)
-        this.addComponent(new ElectricalComponent(false, (newVals) => {
-            this.#outline.color = newVals.size > 0 ? Color.Orange : Color.White
-        }))
-    }
-}
+        // this.on("collision:off", function (this: SP1BoardPad, ev) {
+        //     // if (ev.nowHitting.size === 0) {
+        //     //     this.set("fill", "white")
+        //     // }
+        //     this.colorCollisions(ev.nowHitting.size)
+        // })
 
-export class ThroughHoleProtoboard extends Actor {
-    private numPadsX = 20;
-    private numPadsY = 14;
 
-    constructor() {
-        super({
-            name: "100mil protoboard",
-        });
-    }
-
-    onInitialize() {
-        Array(this.numPadsX).fill(0).forEach((_, i) => Array(this.numPadsY).fill(0).forEach((_, j) => {
-            this.addChild(new ThrougHoleBoardPad({x: 100 * mil * i + 50 * mil, y: 100 * mil * j + 50 * mil}))
-        }))
-    }
-}
-
-class ThrougHoleBoardPad extends Actor {
-    readonly #outline;
-
-    constructor(config: ActorArgs = {}) {
-        super({
-            name: "Through-hole pad",
-            collisionType: CollisionType.Passive,
-            collisionGroup: pinsCollisionGroup,
-            // radius: 25 * mil,
-            // color: Color.Orange,
-            z: -1,
-            ...config
-        });
-        this.collider.set(new CircleCollider({
-            radius: 40 * mil
-        }))
-
-        this.#outline = new Circle({
-            radius: 40 * mil,
-            strokeColor: Color.Orange,
-            lineWidth: 2,
-            color: Color.White
+        this.on("collision:update", function (this: SP1BoardPad, ev) {
+            this.set("fill", ev.nowHitting.size > 0 ? "orange" : "white")
         })
-        this.graphics.use(this.#outline)
-        this.addComponent(new ElectricalComponent(false, (newVals) => {
-            this.#outline.color = newVals.size > 0 ? Color.Orange : Color.White
-        }))
     }
+
+    private colorCollisions(numColls: number) {
+        // this.set("fill", numColls === 0 ? "white" :
+        //     numColls == 1 ? "yellow" :
+        //         numColls == 2 ? "orange" :
+        //             numColls == 3 ? "red" :
+        //                 numColls == 4 ? "blue" :
+        //                     "purple")
+        this.set("fill", "blue")
+    }
+
 }

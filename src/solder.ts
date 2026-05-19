@@ -13,8 +13,8 @@ import {
     Vector
 } from "excalibur";
 import {ElectricalComponent} from "./components/electrical";
-import {pinsCollisionGroup} from "./board";
-import {mil} from "./device";
+import {pinsCollisionGroup} from "./board.ts.old";
+import {mil} from "./device.ts.old";
 import {UndoRedoComponent} from "./components/undoredo";
 
 // import {ElectricalComponent} from "./components/electrical";

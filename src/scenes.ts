@@ -1,6 +1,6 @@
 import {Color, Engine, GraphicsComponent, Scene, SceneActivationContext, TransformComponent, Vector} from "excalibur";
-import {Device, mil} from "./device";
-import {SP1_50x50} from "./board";
+import {Device, mil} from "./device.ts.old";
+import {SP1_50x50} from "./board.ts.old";
 import {ElectricalComponent, ElectricalSystem} from "./components/electrical";
 import {SolderLine} from "./solder";
 import {UndoRedoSystem} from "./components/undoredo";
