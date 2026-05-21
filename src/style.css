@@ -8,6 +8,15 @@ body {
     margin: 1em;
 }
 
+#ui {
+    display: flex;
+    gap: 10px;
+
+    & button {
+        padding: 0.3em 0.6em;
+    }
+}
+
 #controls {
     position: absolute;
     right: 10px;

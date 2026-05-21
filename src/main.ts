@@ -1,8 +1,9 @@
-import {Canvas, controlsUtils, FabricText, InteractiveFabricObject, PencilBrush} from "fabric";
+import {Canvas, controlsUtils, FabricText, InteractiveFabricObject, Path, PencilBrush} from "fabric";
 import {components} from "./device";
 import {SP1_50x50} from "./board";
 import {collisionManager} from "./collisions";
 import {Quadtree} from "@timohausmann/quadtree-ts";
+import {Pane} from "tweakpane";
 
 FabricText.ownDefaults.fontFamily = 'sans-serif';
 InteractiveFabricObject.createControls = () => ({controls: {}});
@@ -19,19 +20,19 @@ InteractiveFabricObject.ownDefaults = {
 const canvasElement = document.getElementById("editor") as HTMLCanvasElement
 const canvas = new Canvas(canvasElement, {
     width: 1600, height: 750,
-    // isDrawingMode: true,
 });
+
 canvas.freeDrawingBrush = new PencilBrush(canvas)
-if (canvas.freeDrawingBrush) {
-    canvas.freeDrawingBrush.color = "blue"
-    canvas.freeDrawingBrush.width = 12
-}
-canvas.on("path:created", function (e) {
+canvas.freeDrawingBrush.color = "blue"
+export const solderWidth = 25, solderRadius = solderWidth / 2;
+canvas.freeDrawingBrush.width = 25;
+(canvas.freeDrawingBrush as PencilBrush).decimate = 10
+canvas.on("path:created", function () {
     canvas.isDrawingMode = false
 })
-document.onkeydown = function (ev) {
-    ev.preventDefault()
-    console.log(ev.key, ev.shiftKey)
+
+canvas.elements.upper.el.tabIndex = -1
+canvas.elements.upper.el.addEventListener("keydown", function (ev) {
     const target = canvas.getActiveObject()
     const deltaAngle = ev.shiftKey ? -90 : 90
     const deltaMovement = ev.shiftKey ? 50 : 10
@@ -40,7 +41,8 @@ document.onkeydown = function (ev) {
     switch (ev.key) {
         case "Delete":
         case "Backspace":
-            canvas.remove(...canvas.getActiveObjects())
+            const toDelete = canvas.getActiveObjects()
+            canvas.remove(...toDelete)
             canvas.discardActiveObject() // otherwise there's a ghost selection left if you delete a group of shapes
             break
         case "r":
@@ -85,39 +87,63 @@ document.onkeydown = function (ev) {
     // trigger a redraw because we likely changed some graphics
     canvas.requestRenderAll()
     target.setCoords()
-    target.fire("moving")
-}
-
-/*
-const helloWorld = new FabricText('Hello\nworld!');
-canvas.add(helloWorld);
-canvas.centerObject(helloWorld);
-helloWorld.on("moving", function (this: FabricText) {
-    console.log(this.getX(), this.getY())
-})*/
+    target.fire("moving") // because most actions will move the targeted object
+})
 
 const ui = document.getElementById('ui')!
+const pane = document.getElementById("controls")!
+
 for (let deviceKind of components) {
     const btn = document.createElement("button")
     btn.textContent = "+ " + deviceKind.displayName
-    btn.onclick = (e) => {
+    btn.addEventListener("click", () => {
         const newDevice = new deviceKind.constructor(...(deviceKind.params || []))
+
         canvas.add(newDevice)
         canvas.centerObject(newDevice)
         newDevice.fire("moving") // to prod the collision detector
-    }
+
+        newDevice.on("mousedblclick", function () {
+            const paramsPane = new Pane({container: pane, title: deviceKind.displayName})
+            newDevice.setupParametersPane(paramsPane)
+            newDevice.once("deselected", function () {
+                paramsPane.dispose()
+            })
+        })
+    })
     ui.appendChild(btn)
 }
+
+// solder lines button
+const solderBtn = document.createElement("button")
+solderBtn.textContent = "Solder"
+solderBtn.onclick = (e) => {
+    solderBtn.disabled = true
+    canvas.isDrawingMode = true
+
+    canvas.once("path:created", ({path}: { path: Path }) => {
+        // stack should always be as follows: base protoboard at the bottom, then all the solder Paths, then the components
+        const allElemsExceptThisPath = canvas.getObjects().slice(0, -1)
+        let topmostPathPosition = allElemsExceptThisPath.findLastIndex(e => e instanceof Path)
+        if (topmostPathPosition === -1) { // if this is the first path, start the stack just above the protoboard
+            topmostPathPosition = 0
+        }
+        canvas.moveObjectTo(path, topmostPathPosition + 1) // push it down until it meets with the other Paths
+
+        collisionManager.addElement(path)
+        path.fire("moving") // convince the collmanager to compute it
+        solderBtn.disabled = false
+    })
+}
+ui.appendChild(solderBtn)
 
 canvas.add(new SP1_50x50())
 canvas.on("object:moving", function (ev) {
     ev.target.fire("moving", ev)
 })
 
-
 let DEBUG_QUADTREE = false
 document.getElementById("debugQuadtree")!.onchange = function (ev) {
-    // debugger
     DEBUG_QUADTREE = (ev.target as HTMLInputElement).checked
     canvas.requestRenderAll()
 }
@@ -125,6 +151,8 @@ canvas.on("after:render", function ({ctx}) {
     if (!DEBUG_QUADTREE) return
     const colorNode = 'rgba(255,0,0,0.5)';
 
+    /* this comes from https://github.com/timohausmann/quadtree-ts/blob/4ab917a58cd7b7c7e7289c4dc0bc3ee2e2c9ee3e/docs/examples/assets/examples.js#L8
+    * Copyright (c) 2012-2023 Timo Hausmann */
     function drawQuadtree(node: Quadtree<any>, ctx: CanvasRenderingContext2D) {
         //no subnodes? draw the current node
         if (node.nodes.length === 0) {
