@@ -2,7 +2,7 @@
   "name": "smd",
   "version": "0.0.0",
   "description": "",
-  "main": "src/main.ts.old",
+  "main": "src/main.ts",
   "scripts": {
     "dev": "vite",
     "start": "vite",

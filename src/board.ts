@@ -1,10 +1,11 @@
-import {Group, Rect} from "fabric";
+import {classRegistry, Group, Rect} from "fabric";
 import {mil} from "./device";
 import {collisionManager} from "./collisions";
 
 export class SP1_50x50 extends Group {
     private static numPadsX = 25;
     private static numPadsY = 18;
+    static type = 'Board/SP1_50x50'
 
     constructor() {
         const pads = Array(SP1_50x50.numPadsX).fill(0).flatMap((_, i) =>
@@ -20,7 +21,11 @@ export class SP1_50x50 extends Group {
     }
 }
 
+classRegistry.setClass(SP1_50x50)
+
 class SP1BoardPad extends Rect {
+    static type = "Board/SP1_50x50/Pad"
+
     constructor(x: number, y: number) {
         super({
             width: 42 * mil, height: 42 * mil,
@@ -37,3 +42,5 @@ class SP1BoardPad extends Rect {
         })
     }
 }
+
+classRegistry.setClass(SP1BoardPad)

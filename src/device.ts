@@ -1,4 +1,4 @@
-import {Group, FabricObject, Rect, Circle, FabricObjectProps, FabricText} from "fabric";
+import {Group, FabricObject, Rect, Circle, FabricObjectProps, FabricText, classRegistry} from "fabric";
 import {collisionManager} from "./collisions";
 import {Pane} from "tweakpane";
 
@@ -14,6 +14,8 @@ export const components: {
 }[] = []
 
 class RectangularPad extends Rect {
+    static type = "Device/RectangularPad"
+
     constructor(width: number, height: number, posX: number, posY: number) {
         super({
             width, height,
@@ -22,6 +24,17 @@ class RectangularPad extends Rect {
         });
         collisionManager.addElement(this)
     }
+}
+
+classRegistry.setClass(RectangularPad)
+
+export type SerializedExtraData = Record<string, any>
+export type SerializedDevice = {
+    type: string
+    x: number
+    y: number
+    rotation: number,
+    extraData: SerializedExtraData
 }
 
 export abstract class Device extends Group {
@@ -42,7 +55,15 @@ export abstract class Device extends Group {
         })
     }
 
-    setupParametersPane(pane: Pane) {
+    setupParametersPane(pane: Pane): void {
+    }
+
+    save(): SerializedExtraData {
+        return {}
+    };
+
+    static load(serialized: SerializedExtraData): Device {
+        throw new Error("unimplemented")
     }
 }
 
@@ -54,6 +75,7 @@ export class SHT40 extends Device {
             params: []
         })
     }
+    static type = "Device/SHT40"
 
     constructor(props?: Partial<FabricObjectProps>) {
         super(
@@ -73,6 +95,19 @@ export class SHT40 extends Device {
             props
         );
     }
+
+    static override load(serialized: SerializedExtraData): Device {
+        return new SHT40()
+    }
+}
+
+classRegistry.setClass(SHT40)
+
+
+type PassiveSerializedData = {
+    width: number
+    height: number
+    tag: string
 }
 
 export class Passive extends Device {
@@ -100,25 +135,26 @@ export class Passive extends Device {
             },
         )
     }
+    static type = "Device/Passive2Pin"
 
     #label: FabricText
 
-    constructor(width: number, height: number, tag: string, props?: Partial<FabricObjectProps>) {
-        const padWidth = .15 * width // arbitrary, but matches https://www.farnell.com/datasheets/15586.pdf really well, and it looks good, so...
+    constructor(private bodyWidth: number, private bodyHeight: number, private tag: string, props?: Partial<FabricObjectProps>) {
+        const padWidth = .15 * bodyWidth // arbitrary, but matches https://www.farnell.com/datasheets/15586.pdf really well, and it looks good, so...
 
         const label = new FabricText(tag, {
-            left: 0, top: 0, height,
-            // magically works very well, https://fabricjs.com/demos/text-on-path/ has a 2.5 factor but that one is way too large
-            fontSize: width / tag.length
+            left: 0, top: 0, height: bodyHeight,
+            // width/length in chars magically works very well, https://fabricjs.com/demos/text-on-path/ has a 2.5 factor but that one is way too large
+            fontSize: bodyWidth / tag.length
         })
         super(
             [
-                new Rect({width, height, stroke: "black", strokeWidth: 1, fill: "white"}),
+                new Rect({width: bodyWidth, height: bodyHeight, stroke: "black", strokeWidth: 1, fill: "white"}),
                 label,
             ],
             [
-                new RectangularPad(padWidth, height, (width / 2 - padWidth / 2) * -1, 0),
-                new RectangularPad(padWidth, height, width / 2 - padWidth / 2, 0),
+                new RectangularPad(padWidth, bodyHeight, (bodyWidth / 2 - padWidth / 2) * -1, 0),
+                new RectangularPad(padWidth, bodyHeight, bodyWidth / 2 - padWidth / 2, 0),
             ],
             props
         );
@@ -132,6 +168,24 @@ export class Passive extends Device {
         // pane.addBinding(_params, "cathodeMark").on("change", (e) => this.cathodeMark.color = e.value ? Color.Black : Color.Transparent
         // )
     }
+
+    override save(): PassiveSerializedData {
+        return {
+            width: this.bodyWidth, height: this.bodyHeight, tag: this.tag
+        };
+    }
+
+    static override load(serialized: PassiveSerializedData): Device {
+        return new Passive(serialized.width, serialized.height, serialized.tag)
+    }
+}
+
+classRegistry.setClass(Passive)
+
+type SOICSerializedData = {
+    height: number
+    tag: string
+    numPins: number
 }
 
 export class SOIC extends Device {
@@ -154,8 +208,9 @@ export class SOIC extends Device {
             },
         )
     }
+    static type = "Device/SOIC"
 
-    constructor(height: number, numPins: number, tag: string, props?: Partial<FabricObjectProps>) {
+    constructor(private bodyHeight: number, private numPins: number, private tag: string, props?: Partial<FabricObjectProps>) {
         const pin1X = -(6.02 * mm / 2 - 0.62 * mm / 2) // pin 1's X is always -(E/2 - L/2)
         const numGapsBetweenPins = numPins / 2 - 1 // e.g. for SOIC8, there are 3 gaps between pins (per side)
         const pin1Y = -(numGapsBetweenPins / 2 * 1.27 * mm) // e.g. for SOIC8 the 1st pin is 1.5 gaps above center
@@ -170,14 +225,14 @@ export class SOIC extends Device {
 
         super(
             [
-                new Rect({width: 3.91 * mm, height, stroke: "black", strokeWidth: 1, fill: "white"}),
+                new Rect({width: 3.91 * mm, height: bodyHeight, stroke: "black", strokeWidth: 1, fill: "white"}),
                 new FabricText(tag, {
-                    left: 0, top: 0, height
+                    left: 0, top: 0, height: bodyHeight
                 }),
                 new Circle({
                     radius: .3 * mm,
                     left: -1.2 * mm, // center offset .75mm from edge
-                    top: -height / 2 + .75 * mm,
+                    top: -bodyHeight / 2 + .75 * mm,
                     stroke: "black",
                     strokeWidth: 1,
                     fill: "white"
@@ -186,4 +241,17 @@ export class SOIC extends Device {
             pins
         )
     }
+
+    override save(): SOICSerializedData {
+        return {
+            height: this.bodyHeight, tag: this.tag, numPins: this.numPins,
+        };
+    }
+
+    static override load(serialized: SOICSerializedData): Device {
+        return new SOIC(serialized.height, serialized.numPins, serialized.tag)
+    }
 }
+
+classRegistry.setClass(SOIC)
+
