@@ -11,20 +11,17 @@
     "test": "npm run build && npx playwright test",
     "test:integration-update": "npx playwright test --update-snapshots"
   },
-  "repository": {},
-  "keywords": [
-    "excalibur",
-    "excaliburjs",
-    "vite",
-    "game-engine"
-  ],
-  "author": "",
-  "license": "",
+  "repository": {
+    "url": "https://github.com/jreyesr/smd-editor"
+  },
+  "keywords": [],
+  "author": "jreyesr",
+  "license": "AGPL-3.0-or-later",
   "bugs": {},
   "homepage": "",
   "dependencies": {
     "@timohausmann/quadtree-ts": "^2.3.0",
-    "excalibur": "0.32.0",
+    "@tweakpane/plugin-essentials": "^0.2.1",
     "fabric": "^7.3.1",
     "tweakpane": "^4.0.5"
   },
