@@ -22,7 +22,9 @@ through-hole devices and larger SMD components (though not SOIC and finer pitch)
 Currently, there are footprints for the following devices:
 
 * SOIC packages, 8-, 14- and 16-pins
-* DIP packages, 8-pins
+* DIP packages, 8-, 14- and 16-pins
+* SOT23 package, 3-, 5- and 6-pin variants
+* Plus the ability to remove specific pins on SOIC, DIP and SOT23 packages (e.g. for high-voltage packages that may skip a pin for isolation purposes)
 * SMD 2-terminal passives (resistors, capacitors, LEDs), 0402, 0603, 0805 and 1206 imperial sizes
 * The [SHT40](https://sensirion.com/products/catalog/SHT40) temperature and humidity sensor by Sensirion
 

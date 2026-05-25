@@ -345,7 +345,7 @@ export class SOIC extends Device {
             // e.g. if (0, 2) on 8-pin then pinNumber = 3, if (1, 3) then pinNumber = 5
             const pinNumber = ev.index[0] === 0 // is left side?
                 ? ev.index[1] + 1 // then just the idx[1] + 1 because Tweakpane nums are 0-based but IC pins are 1-based
-                : this.numPins / 2 + (this.numPins / 2 - ev.index[1]) // else it's right side -> add numPins/2 and numbering is in reverse (bottom up)
+                : this.numPins - ev.index[1] // else it's right side -> add numPins/2 and numbering is in reverse (bottom up)
 
             if (this.missingPinNumbers.has(pinNumber)) {
                 this.missingPinNumbers.delete(pinNumber)
@@ -500,7 +500,7 @@ export class DIP extends Device {
             // e.g. if (0, 2) on 8-pin then pinNumber = 3, if (1, 3) then pinNumber = 5
             const pinNumber = ev.index[0] === 0 // is left side?
                 ? ev.index[1] + 1 // then just the idx[1] + 1 because Tweakpane nums are 0-based but IC pins are 1-based
-                : this.numPins / 2 + (this.numPins / 2 - ev.index[1]) // else it's right side -> add numPins/2 and numbering is in reverse (bottom up)
+                : this.numPins - ev.index[1] // else it's right side -> add numPins/2 and numbering is in reverse (bottom up)
 
             if (this.missingPinNumbers.has(pinNumber)) {
                 this.missingPinNumbers.delete(pinNumber)
@@ -530,6 +530,170 @@ export class DIP extends Device {
         dev.setElements()
         return dev
     }
+}
+
+classRegistry.setClass(DIP)
+
+type SOT23SerializedData = {
+    tag: string
+    missingPinNumbers: number[]
+}
+
+export class SOT23 extends Device {
+    private static MISSING_PIN_PRESETS = {3: [2, 4, 6], 5: [5], 6: []}
+    static {
+        components.push(
+            {
+                displayName: "SOT23-3",
+                constructor: SOT23,
+                params: ["SOT23-3", new Set(SOT23.MISSING_PIN_PRESETS["3"])]
+            },
+            {
+                displayName: "SOT23-5",
+                constructor: SOT23,
+                params: ["SOT23-5", new Set(SOT23.MISSING_PIN_PRESETS["5"])]
+            },
+            {
+                displayName: "SOT23-6",
+                constructor: SOT23,
+                params: ["SOT23-6", new Set(SOT23.MISSING_PIN_PRESETS["6"])]
+            },
+        )
+    }
+    static type = "Device/SOT23"
+    #label: FabricText
+
+    /**
+     * Creates the RectangularPads for this device's pins
+     * @param missingPinNumbers optional, a set of pin numbers to NOT create, e.g. [2, 4, 6] is the SOT23-3 package with 2 pins on the left and 1 pin on the right, staggered
+     * @private
+     */
+    private static makePins(missingPinNumbers = new Set<number>()) {
+        // https://ww1.microchip.com/downloads/en/PackagingSpec/00049w.pdf
+        const pin1X = -(2.8 * mm / 2 - .45 * mm / 2) // -(E/2 - L/2)
+        const pin1Y = -(.95 * mm) // pin pitch for all SOT-23 variants is .95mm nominal, ignoring pins that are separated 2 spaces
+
+        return Array(6).fill(0).map((_, i) => {
+            const pinNumber = i + 1 // pin 1 is top left, pin <numPins + 1> is top right
+            if (missingPinNumbers.has(pinNumber)) return // jump over this one
+
+            const isLeftSide = pinNumber <= 3 // we ignore possibly missing pins e.g. SOT23-3 will only have pins 1, 3, 5, 1 and 3 are on left side
+            const yIndex = isLeftSide ? i : 5 - i // e.g. for SOT23-3: 0, 1 (but skipped), 2, 2 (skipped), 1, 0 (skipped)
+
+            // make the patch LxB centered on
+            return new RectangularPad(
+                .45 * mm, .44 * mm,
+                pin1X * (isLeftSide ? 1 : -1),
+                pin1Y + .95 * mm * yIndex,
+            )
+        }).filter(p => p !== undefined)
+    }
+
+    constructor(private tag: string, private missingPinNumbers: Set<number>, props?: Partial<FabricObjectProps>) {
+        const pins = SOT23.makePins(missingPinNumbers)
+
+        const label = new FabricText(tag, {
+            left: 0, top: 0, height: 2.95 * mm,
+            fontSize: 1.63 * mm / tag.length * 1.5
+        })
+        super(
+            [
+                // width = E1
+                new Rect({width: 1.63 * mm, height: 2.95 * mm, stroke: "black", strokeWidth: 1, fill: "white"}),
+                label,
+                new Circle({
+                    radius: .12 * mm,
+                    left: -1.63 * mm / 2 + .4 * mm, // center offset .. from edge
+                    top: -2.95 * mm / 2 + .4 * mm,
+                    stroke: "black",
+                    strokeWidth: 1,
+                    fill: "black"
+                })
+            ],
+            pins
+        )
+        this.#label = label
+    }
+
+    override setupParametersPane(pane: Pane) {
+        // @ts-expect-error doesn't recognize "tag" as keyof this
+        pane.addBinding(this, "tag").on("change", () => {
+            this.#label.set("text", this.tag)
+            this.canvas?.requestRenderAll()
+        });
+
+
+        let buttonGridBlade: ButtonGridApi
+        const currentPreset = this.missingPinNumbers.symmetricDifference(new Set([2, 4, 6])).size == 0 ? 3
+            : this.missingPinNumbers.symmetricDifference(new Set([5])).size == 0 ? 5
+                : this.missingPinNumbers.size == 0 ? 6
+                    : 0;
+        ((pane.addBlade({
+            view: "list",
+            label: "pkg",
+            options: [
+                {text: "SOT23-3", value: 3},
+                {text: "SOT23-5", value: 5},
+                {text: "SOT23-6", value: 6},
+                {text: "other", value: 0},
+            ],
+            value: currentPreset,
+        })) as ListBladeApi<number>).on("change", ev => {
+            if (ev.value !== 0) { // not the "other" option
+                buttonGridBlade.disabled = true
+                this.missingPinNumbers = new Set((SOT23.MISSING_PIN_PRESETS as Record<string, number[]>)[ev.value.toString()])
+                this.pins = SOT23.makePins(this.missingPinNumbers)
+                this.setElements()
+                this.canvas?.requestRenderAll()
+            } else { // the "other option", enable the button grid for manual pin choosage
+                buttonGridBlade.disabled = false
+            }
+        });
+
+        buttonGridBlade = pane.addBlade({
+            view: "buttongrid", size: [2, 3],
+            cells: (x: number, y: number) => ({
+                title: `${"LR"[x]}${y + 1}`,
+            }),
+            label: "pins"
+        }) as ButtonGridApi
+        if (currentPreset !== 0) {
+            buttonGridBlade.disabled = true
+        }
+        buttonGridBlade.on("click", (ev) => {
+            // e.g. if (0, 2) on 8-pin then pinNumber = 3, if (1, 3) then pinNumber = 5
+            const pinNumber = ev.index[0] === 0 // is left side?
+                ? ev.index[1] + 1 // then just the idx[1] + 1 because Tweakpane nums are 0-based but IC pins are 1-based
+                : 6 - ev.index[1] // else it's right side -> e.g. (2, 0) is right up -> pin 6
+
+            if (this.missingPinNumbers.has(pinNumber)) {
+                this.missingPinNumbers.delete(pinNumber)
+                ev.cell.title = `✓ ${"LR"[ev.index[0]]}${ev.index[1] + 1}`
+            } else {
+                this.missingPinNumbers.add(pinNumber)
+                ev.cell.title = `× ${"LR"[ev.index[0]]}${ev.index[1] + 1}`
+            }
+
+            this.pins = SOT23.makePins(this.missingPinNumbers)
+            this.setElements()
+            this.canvas?.requestRenderAll()
+        });
+    }
+
+    override save(): SOT23SerializedData {
+        return {
+            tag: this.tag,
+            missingPinNumbers: Array.from(this.missingPinNumbers)
+        };
+    }
+
+    // static override load(serialized: DIPSerializedData): Device {
+    //     const dev = new DIP(serialized.height, serialized.numPins, serialized.tag)
+    //     dev.missingPinNumbers = new Set<number>(serialized.missingPinNumbers ?? [])
+    //     dev.pins = DIP.makePins(dev.numPins, dev.missingPinNumbers)
+    //     dev.setElements()
+    //     return dev
+    // }
 }
 
 classRegistry.setClass(DIP)

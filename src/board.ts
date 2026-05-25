@@ -1,4 +1,4 @@
-import {classRegistry, Group, Rect} from "fabric";
+import {Circle, classRegistry, Group, Rect} from "fabric";
 import {mil} from "./device";
 import {collisionManager} from "./collisions";
 
@@ -13,7 +13,22 @@ export class SP1_50x50 extends Group {
                 new SP1BoardPad(50 * mil * i + 25 * mil, 50 * mil * j + 25 * mil)
             )
         )
-        super(pads, {
+        const vias = Array(SP1_50x50.numPadsX).fill(0).flatMap((_, i) =>
+            Array(SP1_50x50.numPadsY).fill(0)
+                .map((_, j) => {
+                        if ((i % 4 === 1) && (j % 4 === 1)) {
+                            return new Circle({
+                                radius: 12 * mil,
+                                left: 50 * mil * i + 25 * mil, top: 50 * mil * j + 25 * mil,
+                                stroke: "orange", fill: "white"
+                            })
+                        } else {
+                            return undefined
+                        }
+                    }
+                ).filter(x => x !== undefined)
+        )
+        super([...pads, ...vias], {
             selectable: false,
             // originX: "left", originY: "top",
             // top: 0, left: 0
