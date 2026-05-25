@@ -12,6 +12,7 @@ import {SP1_50x50} from "./board";
 import {collisionManager} from "./collisions";
 import {Quadtree} from "@timohausmann/quadtree-ts";
 import {Pane} from "tweakpane";
+import * as EssentialsPlugin from '@tweakpane/plugin-essentials';
 
 FabricText.ownDefaults.fontFamily = 'sans-serif';
 InteractiveFabricObject.createControls = () => ({controls: {}});
@@ -107,6 +108,7 @@ function addDeviceToCanvas(dev: Device | Path) {
         dev.fire("moving") // to prod the collision detector
         dev.on("mousedblclick", function () {
             const paramsPane = new Pane({container: pane, title: dev.type})
+            paramsPane.registerPlugin(EssentialsPlugin)
             dev.setupParametersPane(paramsPane)
             dev.once("deselected", function () {
                 paramsPane.dispose()

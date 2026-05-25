@@ -104,13 +104,17 @@ export const collisionManager = {
         this._fabricToQTMap.set(elem, quadtreeEntity)
 
         const that = this
-        elem.on("moving", function () {
+
+        function updatePositionInQuadtree() {
             quadtreeEntity.x = elem.getBoundingRect().left
             quadtreeEntity.y = elem.getBoundingRect().top
             // no need to change width and height, we never allow any elements to be change size
             that._quadtree.update(quadtreeEntity)
             that.findHits(elem)
-        })
+        }
+
+        elem.on("moving", updatePositionInQuadtree)
+        elem.on("added", updatePositionInQuadtree) // e.g. when added to group, then the coords will change
 
         elem.once("removed", function () {
             collisionManager.removeElement(elem)

@@ -1,6 +1,7 @@
-import {Group, FabricObject, Rect, Circle, FabricObjectProps, FabricText, classRegistry} from "fabric";
+import {Group, FabricObject, Rect, Circle, FabricObjectProps, FabricText, classRegistry, util} from "fabric";
 import {collisionManager} from "./collisions";
-import {Pane} from "tweakpane";
+import {ListBladeApi, Pane, TextBladeApi} from "tweakpane";
+import {ButtonGridApi} from "@tweakpane/plugin-essentials";
 
 const PIXELS_PER_MM = 40;
 export const mm = PIXELS_PER_MM;
@@ -38,6 +39,32 @@ export type SerializedDevice = {
 }
 
 export abstract class Device extends Group {
+    private movingDisposer?: VoidFunction;
+    private removedDisposer?: VoidFunction;
+
+    protected setElements() {
+        for (let pin of this.pins) {
+            // HACK this shouldn't be necessary (Group.add -> Collection.add -> Group._onObjectAdded -> Group.enterGroup -> Group._enterGroup is supposed to do the same thing)
+            // but if we don't do this then changing pins on a Device that already exists places them way too top&left
+            // (probably because from the Pin's POV its coordinates are close to 0)
+            // NOTE this has to be done *before* the .add call below, otherwise it doesn't apply correctly
+            util.sendObjectToPlane(pin, undefined, util.invertTransform(this.calcTransformMatrix()))
+        }
+
+        this.removeAll()
+        this.add(...this.graphical, ...this.pins)
+
+        this.movingDisposer?.()
+        this.movingDisposer = this.on("moving", function (this: Device, ev) {
+            this.pins.forEach(p => p.fire("moving", ev))
+        })
+
+        this.removedDisposer?.()
+        this.removedDisposer = this.once("removed", function (this: Device, ev) {
+            this.pins.forEach(p => p.fire("removed", ev))
+        })
+    }
+
     protected constructor(protected graphical: FabricObject[],
                           protected pins: RectangularPad[],
                           props?: Partial<FabricObjectProps>) {
@@ -45,14 +72,8 @@ export abstract class Device extends Group {
             padding: 5,
             ...props,
         })
-        this.add(...this.graphical, ...this.pins)
 
-        this.on("moving", function (this: Device, ev) {
-            this.pins.forEach(p => p.fire("moving", ev))
-        })
-        this.once("removed", function (this: Device, ev) {
-            this.pins.forEach(p => p.fire("removed", ev))
-        })
+        this.setElements()
     }
 
     setupParametersPane(pane: Pane): void {
@@ -163,7 +184,15 @@ export class Passive extends Device {
     }
 
     setupParametersPane(pane: Pane) {
-        pane.addBinding(this.#label, "text", {label: "tag"});
+        (pane.addBlade({
+            view: "text",
+            label: "tag",
+            parse: String,
+            value: this.#label.text
+        }) as TextBladeApi<string>).on("change", (ev) => {
+            this.#label.set("text", ev.value)
+            this.canvas?.requestRenderAll()
+        });
         // const _params = {cathodeMark: false}
         // pane.addBinding(_params, "cathodeMark").on("change", (e) => this.cathodeMark.color = e.value ? Color.Black : Color.Transparent
         // )
@@ -189,46 +218,70 @@ type SOICSerializedData = {
 }
 
 export class SOIC extends Device {
+    private static readonly STANDARD_DIMENSIONS: Record<number, number> = {
+        8: 4.9 * mm,
+        14: 8.7 * mm,
+        16: 9.9 * mm
+    }
     static {
         components.push(
             {
                 displayName: "SOIC8",
                 constructor: SOIC,
-                params: [4.9 * mm, 8, "SOIC8"]
+                params: [SOIC.STANDARD_DIMENSIONS[8], 8, "SOIC8"]
             },
             {
                 displayName: "SOIC14",
                 constructor: SOIC,
-                params: [8.69 * mm, 14, "SOIC14"]
+                params: [SOIC.STANDARD_DIMENSIONS[14], 14, "SOIC14"]
             },
             {
                 displayName: "SOIC16",
                 constructor: SOIC,
-                params: [9.91 * mm, 16, "SOIC16"]
+                params: [SOIC.STANDARD_DIMENSIONS[16], 16, "SOIC16"]
             },
         )
     }
     static type = "Device/SOIC"
+    #label: FabricText
 
-    constructor(private bodyHeight: number, private numPins: number, private tag: string, props?: Partial<FabricObjectProps>) {
+    /**
+     * Creates the RectangularPads for this device's pins
+     * @param numPins e.g. 8 or 14, the number of pins in this device, must be even
+     * @param missingPinNumbers optional, a set of pin numbers to NOT create, e.g. [7] on a SOIC14 won't create the bottom left pin that is commonly GND on 7400-series logic devices
+     * @private
+     */
+    private static makePins(numPins: number, missingPinNumbers = new Set<number>()) {
         const pin1X = -(6.02 * mm / 2 - 0.62 * mm / 2) // pin 1's X is always -(E/2 - L/2)
         const numGapsBetweenPins = numPins / 2 - 1 // e.g. for SOIC8, there are 3 gaps between pins (per side)
         const pin1Y = -(numGapsBetweenPins / 2 * 1.27 * mm) // e.g. for SOIC8 the 1st pin is 1.5 gaps above center
-        const pins = Array(numPins).fill(0).map((_, i) => {
+
+        return Array(numPins).fill(0).map((_, i) => {
+            const pinNumber = i + 1 // pin 1 is top left, pin <numPins + 1> is top right
+            if (missingPinNumbers.has(pinNumber)) return // jump over this one
+
             const isLeftSide = i < numPins / 2 // e.g. for SOIC8: true, true, true, true, false, false, false, false
             const yIndex = isLeftSide ? i : numPins - i - 1 // e.g. for SOIC8: 0, 1, 2, 3, 3, 2, 1, 0ç
 
             return new RectangularPad(.62 * mm, .42 * mm,
                 pin1X * (isLeftSide ? 1 : -1),
-                pin1Y + 1.27 * mm * yIndex,)
-        })
+                pin1Y + 1.27 * mm * yIndex,
+            )
+        }).filter(p => p !== undefined)
+    }
 
+    private missingPinNumbers = new Set<number>()
+
+    constructor(private bodyHeight: number, private numPins: number, private tag: string, props?: Partial<FabricObjectProps>) {
+        const pins = SOIC.makePins(numPins)
+
+        const label = new FabricText(tag, {
+            left: 0, top: 0, height: bodyHeight
+        })
         super(
             [
                 new Rect({width: 3.91 * mm, height: bodyHeight, stroke: "black", strokeWidth: 1, fill: "white"}),
-                new FabricText(tag, {
-                    left: 0, top: 0, height: bodyHeight
-                }),
+                label,
                 new Circle({
                     radius: .3 * mm,
                     left: -1.2 * mm, // center offset .75mm from edge
@@ -240,6 +293,55 @@ export class SOIC extends Device {
             ],
             pins
         )
+        this.#label = label
+    }
+
+    override setupParametersPane(pane: Pane) {
+        // @ts-expect-error doesn't recognize "tag" as keyof this
+        pane.addBinding(this, "tag").on("change", (ev) => {
+            this.#label.set("text", this.tag)
+            this.canvas?.requestRenderAll()
+        });
+
+        ((pane.addBlade({
+            view: "list",
+            label: "size",
+            options: Object.keys(SOIC.STANDARD_DIMENSIONS).map(numPins => ({
+                text: `${numPins} pins narrow`,
+                value: parseInt(numPins)
+            })),
+            value: this.numPins,
+        })) as ListBladeApi<number>).on("change", ev => {
+            this.numPins = ev.value
+            this.pins = SOIC.makePins(ev.value, this.missingPinNumbers)
+            this.setElements()
+            this.canvas?.requestRenderAll()
+        });
+
+        (pane.addBlade({
+            view: "buttongrid", size: [2, this.numPins / 2],
+            cells: (x: number, y: number) => ({
+                title: `${"LR"[x]}${y + 1}`,
+            }),
+            label: "pins"
+        }) as ButtonGridApi).on("click", (ev) => {
+            // e.g. if (0, 2) on 8-pin then pinNumber = 3, if (1, 3) then pinNumber = 5
+            const pinNumber = ev.index[0] === 0 // is left side?
+                ? ev.index[1] + 1 // then just the idx[1] + 1 because Tweakpane nums are 0-based but IC pins are 1-based
+                : this.numPins / 2 + (this.numPins / 2 - ev.index[1]) // else it's right side -> add numPins/2 and numbering is in reverse (bottom up)
+
+            if (this.missingPinNumbers.has(pinNumber)) {
+                this.missingPinNumbers.delete(pinNumber)
+                ev.cell.title = `✓ ${"LR"[ev.index[0]]}${ev.index[1] + 1}`
+            } else {
+                this.missingPinNumbers.add(pinNumber)
+                ev.cell.title = `× ${"LR"[ev.index[0]]}${ev.index[1] + 1}`
+            }
+
+            this.pins = SOIC.makePins(this.numPins, this.missingPinNumbers)
+            this.setElements()
+            this.canvas?.requestRenderAll()
+        });
     }
 
     override save(): SOICSerializedData {
