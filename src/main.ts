@@ -1,4 +1,5 @@
 import {
+    ActiveSelection,
     Canvas,
     classRegistry,
     controlsUtils,
@@ -202,6 +203,14 @@ if (localStorage.getItem("currentWork")) {
 
 canvas.on("object:moving", function (ev) {
     ev.target.fire("moving", ev)
+
+    // must forward the move event that fires on the ActiveSelection to each of the selected elements
+    // because the colldet hooks into each object's "moving" event
+    if (ev.target instanceof ActiveSelection) {
+        for (let selectedItem of ev.target.getObjects()) {
+            selectedItem.fire("moving", ev)
+        }
+    }
 })
 
 let DEBUG_QUADTREE = false
