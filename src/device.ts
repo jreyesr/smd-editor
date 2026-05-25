@@ -29,6 +29,22 @@ class RectangularPad extends Rect {
 
 classRegistry.setClass(RectangularPad)
 
+class CircularPad extends Circle {
+    static type = "Device/CircularPad"
+
+    constructor(radius: number, posX: number, posY: number) {
+        super({
+            radius,
+            fill: "green",
+            left: posX, top: posY
+        });
+        collisionManager.addElement(this)
+    }
+}
+
+classRegistry.setClass(CircularPad)
+
+
 export type SerializedExtraData = Record<string, any>
 export type SerializedDevice = {
     type: string
@@ -66,7 +82,7 @@ export abstract class Device extends Group {
     }
 
     protected constructor(protected graphical: FabricObject[],
-                          protected pins: RectangularPad[],
+                          protected pins: RectangularPad[] | CircularPad[],
                           props?: Partial<FabricObjectProps>) {
         super([], {
             padding: 5,
@@ -298,7 +314,7 @@ export class SOIC extends Device {
 
     override setupParametersPane(pane: Pane) {
         // @ts-expect-error doesn't recognize "tag" as keyof this
-        pane.addBinding(this, "tag").on("change", (ev) => {
+        pane.addBinding(this, "tag").on("change", () => {
             this.#label.set("text", this.tag)
             this.canvas?.requestRenderAll()
         });
@@ -356,4 +372,153 @@ export class SOIC extends Device {
 }
 
 classRegistry.setClass(SOIC)
+
+type DIPSerializedData = {
+    height: number
+    tag: string
+    numPins: number
+}
+
+export class DIP extends Device {
+    // https://ww1.microchip.com/downloads/en/PackagingSpec/00049w.pdf
+    private static readonly STANDARD_DIMENSIONS: Record<number, number> = {
+        8: 9.46 * mm,
+        14: 19.05 * mm,
+        16: 19.05 * mm
+    }
+    static {
+        components.push(
+            {
+                displayName: "DIP8",
+                constructor: DIP,
+                params: [DIP.STANDARD_DIMENSIONS[8], 8, "DIP8"]
+            },
+            {
+                displayName: "DIP14",
+                constructor: DIP,
+                params: [DIP.STANDARD_DIMENSIONS[14], 14, "DIP14"]
+            },
+            {
+                displayName: "DIP16",
+                constructor: DIP,
+                params: [DIP.STANDARD_DIMENSIONS[16], 16, "DIP16"]
+            },
+        )
+    }
+    static type = "Device/DIP"
+    #label: FabricText
+
+    /**
+     * Creates the RectangularPads for this device's pins
+     * @param numPins e.g. 8 or 14, the number of pins in this device, must be even
+     * @param missingPinNumbers optional, a set of pin numbers to NOT create, e.g. [7] on a SOIC14 won't create the bottom left pin that is commonly GND on 7400-series logic devices
+     * @private
+     */
+    private static makePins(numPins: number, missingPinNumbers = new Set<number>()) {
+        const pin1X = -(150 * mil) // the rows of pins are separated 300 mils so left row is 150mils to the left of center
+        const numGapsBetweenPins = numPins / 2 - 1 // e.g. for DIP8, there are 3 gaps between pins (per side)
+        const pin1Y = -(numGapsBetweenPins / 2 * 100 * mil) // e.g. for DIP8 the 1st pin is 1.5 gaps above center
+
+        return Array(numPins).fill(0).map((_, i) => {
+            const pinNumber = i + 1 // pin 1 is top left, pin <numPins + 1> is top right
+            if (missingPinNumbers.has(pinNumber)) return // jump over this one
+
+            const isLeftSide = i < numPins / 2 // e.g. for DIP4: true, true, false, false
+            const yIndex = isLeftSide ? i : numPins - i - 1 // e.g. for DIP4: 0, 1, 1, 0
+
+            // radius should be about B/2 in https://ww1.microchip.com/downloads/en/PackagingSpec/00049w.pdf
+            return new CircularPad(.46 * mm / 2,
+                pin1X * (isLeftSide ? 1 : -1),
+                pin1Y + 100 * mil * yIndex,
+            )
+        }).filter(p => p !== undefined)
+    }
+
+    private missingPinNumbers = new Set<number>()
+
+    constructor(private bodyHeight: number, private numPins: number, private tag: string, props?: Partial<FabricObjectProps>) {
+        const pins = DIP.makePins(numPins)
+
+        const label = new FabricText(tag, {
+            left: 0, top: 0, height: bodyHeight
+        })
+        super(
+            [
+                // width = E1
+                new Rect({width: 250 * mil, height: bodyHeight, stroke: "black", strokeWidth: 1, fill: "white"}),
+                label,
+                new Circle({
+                    radius: .3 * mm,
+                    left: -250 * mil / 2 + .75 * mm, // center offset .75mm from edge
+                    top: -bodyHeight / 2 + .75 * mm,
+                    stroke: "black",
+                    strokeWidth: 1,
+                    fill: "white"
+                })
+            ],
+            pins
+        )
+        this.#label = label
+    }
+
+    override setupParametersPane(pane: Pane) {
+        // @ts-expect-error doesn't recognize "tag" as keyof this
+        pane.addBinding(this, "tag").on("change", () => {
+            this.#label.set("text", this.tag)
+            this.canvas?.requestRenderAll()
+        });
+
+        ((pane.addBlade({
+            view: "list",
+            label: "size",
+            options: Object.keys(DIP.STANDARD_DIMENSIONS).map(numPins => ({
+                text: `${numPins} pins narrow`,
+                value: parseInt(numPins)
+            })),
+            value: this.numPins,
+        })) as ListBladeApi<number>).on("change", ev => {
+            this.numPins = ev.value
+            this.pins = DIP.makePins(ev.value, this.missingPinNumbers)
+            this.setElements()
+            this.canvas?.requestRenderAll()
+        });
+
+        (pane.addBlade({
+            view: "buttongrid", size: [2, this.numPins / 2],
+            cells: (x: number, y: number) => ({
+                title: `${"LR"[x]}${y + 1}`,
+            }),
+            label: "pins"
+        }) as ButtonGridApi).on("click", (ev) => {
+            // e.g. if (0, 2) on 8-pin then pinNumber = 3, if (1, 3) then pinNumber = 5
+            const pinNumber = ev.index[0] === 0 // is left side?
+                ? ev.index[1] + 1 // then just the idx[1] + 1 because Tweakpane nums are 0-based but IC pins are 1-based
+                : this.numPins / 2 + (this.numPins / 2 - ev.index[1]) // else it's right side -> add numPins/2 and numbering is in reverse (bottom up)
+
+            if (this.missingPinNumbers.has(pinNumber)) {
+                this.missingPinNumbers.delete(pinNumber)
+                ev.cell.title = `✓ ${"LR"[ev.index[0]]}${ev.index[1] + 1}`
+            } else {
+                this.missingPinNumbers.add(pinNumber)
+                ev.cell.title = `× ${"LR"[ev.index[0]]}${ev.index[1] + 1}`
+            }
+
+            this.pins = DIP.makePins(this.numPins, this.missingPinNumbers)
+            this.setElements()
+            this.canvas?.requestRenderAll()
+        });
+    }
+
+    override save(): DIPSerializedData {
+        return {
+            height: this.bodyHeight, tag: this.tag, numPins: this.numPins,
+        };
+    }
+
+    static override load(serialized: DIP): Device {
+        return new DIP(serialized.height, serialized.numPins, serialized.tag)
+    }
+}
+
+classRegistry.setClass(DIP)
 
