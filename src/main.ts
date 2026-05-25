@@ -114,6 +114,8 @@ function addDeviceToCanvas(dev: Device | Path) {
                 paramsPane.dispose()
             })
         })
+    } else if (dev instanceof Path) {
+        onSolderAdded(dev)
     }
 }
 
@@ -131,23 +133,27 @@ for (let deviceKind of components) {
 
 // solder lines button
 const solderBtn = document.createElement("button")
+
+function onSolderAdded(path: Path) {
+    // stack should always be as follows: base protoboard at the bottom, then all the solder Paths, then the components
+    const allElemsExceptThisPath = canvas.getObjects().slice(0, -1)
+    let topmostPathPosition = allElemsExceptThisPath.findLastIndex(e => e instanceof Path)
+    if (topmostPathPosition === -1) { // if this is the first path, start the stack just above the protoboard
+        topmostPathPosition = 0
+    }
+    canvas.moveObjectTo(path, topmostPathPosition + 1) // push it down until it meets with the other Paths
+
+    collisionManager.addElement(path)
+    path.fire("moving") // convince the collmanager to compute it
+}
+
 solderBtn.textContent = "Solder"
 solderBtn.addEventListener("click", (e) => {
     solderBtn.disabled = true
     canvas.isDrawingMode = true
 
-    canvas.once("path:created", ({path}: { path: Path }) => {
-        // stack should always be as follows: base protoboard at the bottom, then all the solder Paths, then the components
-        const allElemsExceptThisPath = canvas.getObjects().slice(0, -1)
-        let topmostPathPosition = allElemsExceptThisPath.findLastIndex(e => e instanceof Path)
-        if (topmostPathPosition === -1) { // if this is the first path, start the stack just above the protoboard
-            topmostPathPosition = 0
-        }
-        canvas.moveObjectTo(path, topmostPathPosition + 1) // push it down until it meets with the other Paths
-
-        collisionManager.addElement(path)
-        path.fire("moving") // convince the collmanager to compute it
-
+    canvas.once("path:created", (ev) => {
+        onSolderAdded(ev.path as Path)
         solderBtn.disabled = false
         canvas.isDrawingMode = false
     })
