@@ -109,8 +109,8 @@ class QTBezier extends QTRectangle<Path> {
 type QTShapes<T> = QTRectangle<T> | QTCircle<T> | QTBezier
 
 export const collisionManager = {
-    _lastHitStatuses: new WeakMap<FabricObject, Set<FabricObject>>(),
-    _fabricToQTMap: new WeakMap<FabricObject, QTShapes<FabricObject>>(),
+    _lastHitStatuses: new Map<FabricObject, Set<FabricObject>>(),
+    _fabricToQTMap: new Map<FabricObject, QTShapes<FabricObject>>(),
     _quadtree: new Quadtree<QTShapes<FabricObject>>({
         width: 1600, height: 750,
         // maxLevels: 0
@@ -158,8 +158,8 @@ export const collisionManager = {
 
     findHits(elem: FabricObject) {
         const quadtreeElem = fabricToQuadtree(elem)
-        const hits = this._quadtree.retrieve(quadtreeElem)
-            .filter(e => elem !== e.data && collides(quadtreeElem, e))
+        const hits = this._quadtree.retrieve(quadtreeElem) // coarse collision check via basic shapes
+            .filter(e => elem !== e.data && collides(quadtreeElem, e)) // actual collision check (e.g. using the real bezier's path instead of its bounding box)
             .map(e => ({a: elem, b: e.data!}))
 
         const prevHits = this._lastHitStatuses.get(elem) ?? new Set()
@@ -192,7 +192,43 @@ export const collisionManager = {
         }
 
         return hits
-    }
+    },
+
+    /**
+     * Given the latest collision statuses (A collides with B and D, B collides with A, ...),
+     * returns a set of connected components, i.e. all the groups of things that collide with
+     * each other and with nothing else, possibly indirectly.
+     * E.g. if pin A collides with board pad 1,2 and solder line X collides with board pads 1,2
+     * and 1,3 and pin A of another device collides with board pad 1,3, then all of them are part of the same connected
+     * component (pin A->pad 1,2->solder line->pad 1,2->pin A')
+     */
+    getConnectedSets(): Set<Set<FabricObject>> {
+        const dfs = (elem: FabricObject, alreadyKnown: Set<FabricObject>) => {
+            const adjacent = this._lastHitStatuses.get(elem)
+            if (adjacent === undefined) return // elem doesn't connect to anything
+            const newlyKnown = adjacent.difference(alreadyKnown) // this is to prevent cycles
+            for (let x of newlyKnown) {
+                alreadyKnown.add(x)
+                dfs(x, alreadyKnown)
+            }
+            // no need to return anything, alreadyKnown is changed in-place
+        }
+
+        const components = new Set<Set<FabricObject>>()
+        let alreadyCovered = new Set<FabricObject>()
+        for (let seedElem of this._lastHitStatuses.keys()) {
+            if (alreadyCovered.has(seedElem)) continue
+
+            const singleComponent = new Set<FabricObject>()
+            singleComponent.add(seedElem)
+            dfs(seedElem, singleComponent) // will alter connectedElems
+            alreadyCovered = alreadyCovered.union(singleComponent) // e.g. if {A, B}, then there's no need to then start from seed B
+
+            components.add(singleComponent)
+        }
+
+        return components
+    },
 }
 
 declare module "fabric" {

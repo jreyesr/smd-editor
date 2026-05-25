@@ -45,7 +45,6 @@ class SP1BoardPad extends Rect {
             top: y, left: x,
             fill: "white",
             stroke: "orange",
-            // originX: "left", originY: "top"
         });
 
         collisionManager.addElement(this)

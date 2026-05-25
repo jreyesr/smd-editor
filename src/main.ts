@@ -238,5 +238,44 @@ canvas.on("after:render", function ({ctx}) {
         }
     }
 
+    ctx.save()
     drawQuadtree(collisionManager._quadtree, ctx)
+    ctx.restore()
+})
+
+let DEBUG_RATSNEST = false
+document.getElementById("debugRatsnest")!.onchange = function (ev) {
+    DEBUG_RATSNEST = (ev.target as HTMLInputElement).checked
+    canvas.requestRenderAll()
+}
+canvas.on("after:render", function ({ctx}) {
+    if (!DEBUG_RATSNEST) return
+    const colorRatsnestLines = 'magenta';
+
+    ctx.save()
+    ctx.strokeStyle = colorRatsnestLines
+    ctx.setLineDash([4, 4])
+    ctx.lineWidth = 3
+
+    const connectedComponents = collisionManager.getConnectedSets()
+    for (let net of connectedComponents) {
+        let isFirst = true
+        for (let component of net) {
+            if (component.type.endsWith("/pad") || component.type === "path") {
+                // don't count board pads or solder lines on the ratsnest, only actual component pads/pins
+                continue
+            }
+
+            if (isFirst) {  // only happens on the first loop
+                ctx.moveTo(component.getX(), component.getY())
+                isFirst = false
+            } else {
+                // add another point to the line
+                ctx.lineTo(component.getX(), component.getY())
+            }
+            // ctx.arc(component.getX(), component.getY(), 5, 0, 2 * Math.PI);
+        }
+        ctx.stroke() // draw the line
+    }
+    ctx.restore()
 })
