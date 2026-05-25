@@ -231,6 +231,7 @@ type SOICSerializedData = {
     height: number
     tag: string
     numPins: number
+    missingPinNumbers: number[]
 }
 
 export class SOIC extends Device {
@@ -362,12 +363,17 @@ export class SOIC extends Device {
 
     override save(): SOICSerializedData {
         return {
-            height: this.bodyHeight, tag: this.tag, numPins: this.numPins,
+            height: this.bodyHeight, tag: this.tag,
+            numPins: this.numPins, missingPinNumbers: Array.from(this.missingPinNumbers)
         };
     }
 
-    static override load(serialized: SOICSerializedData): Device {
-        return new SOIC(serialized.height, serialized.numPins, serialized.tag)
+    static override load(serialized: SOICSerializedData): SOIC {
+        const dev = new SOIC(serialized.height, serialized.numPins, serialized.tag)
+        dev.missingPinNumbers = new Set<number>(serialized.missingPinNumbers ?? [])
+        dev.pins = SOIC.makePins(dev.numPins, dev.missingPinNumbers)
+        dev.setElements()
+        return dev
     }
 }
 
@@ -377,6 +383,7 @@ type DIPSerializedData = {
     height: number
     tag: string
     numPins: number
+    missingPinNumbers: number[]
 }
 
 export class DIP extends Device {
@@ -511,12 +518,17 @@ export class DIP extends Device {
 
     override save(): DIPSerializedData {
         return {
-            height: this.bodyHeight, tag: this.tag, numPins: this.numPins,
+            height: this.bodyHeight, tag: this.tag,
+            numPins: this.numPins, missingPinNumbers: Array.from(this.missingPinNumbers)
         };
     }
 
-    static override load(serialized: DIP): Device {
-        return new DIP(serialized.height, serialized.numPins, serialized.tag)
+    static override load(serialized: DIPSerializedData): Device {
+        const dev = new DIP(serialized.height, serialized.numPins, serialized.tag)
+        dev.missingPinNumbers = new Set<number>(serialized.missingPinNumbers ?? [])
+        dev.pins = DIP.makePins(dev.numPins, dev.missingPinNumbers)
+        dev.setElements()
+        return dev
     }
 }
 
