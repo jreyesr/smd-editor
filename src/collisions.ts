@@ -51,19 +51,24 @@ function collides(a: QTShapes<unknown>, b: QTShapes<unknown>) {
             // dist between centers = sqrt(Δx^2 + Δy^2) <= r1+r2
             return Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2) <= Math.pow(a.r + b.r, 2)
         case (a instanceof QTBezier && b instanceof QTRectangle) || (b instanceof QTBezier && a instanceof QTRectangle):
-            // curve-to-rect coll check
+            // curve-to-rect coll check (e.g solderline to rectangular SMD board pad or to rectangular device pin)
             const rect = (a instanceof QTBezier ? b : a) as QTRectangle<FabricObject>
-            const bezier = (a instanceof QTBezier ? a : b) as QTBezier
-            return bezier.intersectsRect(rect)
+            const bezierBezierRect = (a instanceof QTBezier ? a : b) as QTBezier
+            return bezierBezierRect.intersectsRect(rect)
+        case (a instanceof QTBezier && b instanceof QTCircle) || (b instanceof QTBezier && a instanceof QTCircle):
+            // curve-to-rect coll check (e.g solderline to through-hole board pad)
+            const circleBezierCircle = (a instanceof QTBezier ? b : a) as QTCircle<FabricObject>
+            const bezierBezierCircle = (a instanceof QTBezier ? a : b) as QTBezier
+            return bezierBezierCircle.intersectsCircle(circleBezierCircle)
         case a instanceof QTRectangle && b instanceof QTRectangle:
             // simple AABB checks
             return overlap([a.x, a.x + a.width], [b.x, b.x + b.width]) &&
                 overlap([a.y, a.y + a.height], [b.y, b.y + b.height])
         default:
             // either a is circle and b is rect or viceversa, quadtree-ts has a utility function for that
-            const circle = a instanceof QTCircle ? a : b as QTCircle<unknown>
+            const circleDef = a instanceof QTCircle ? a : b as QTCircle<unknown>
             const rectDef = a instanceof QTCircle ? b as QTRectangle<unknown> : a
-            return QTCircle.intersectRect(circle.x, circle.y, circle.r, rectDef.x, rectDef.y, rectDef.x + rectDef.width, rectDef.y + rectDef.height)
+            return QTCircle.intersectRect(circleDef.x, circleDef.y, circleDef.r, rectDef.x, rectDef.y, rectDef.x + rectDef.width, rectDef.y + rectDef.height)
     }
 }
 
@@ -85,6 +90,19 @@ class QTBezier extends QTRectangle<Path> {
             return QTCircle.intersectRect(pointRealX, pointRealY, this.pathRadius, rect.x, rect.y, rect.x + rect.width, rect.y + rect.height)
         }
         return util.getPathSegmentsInfo(this.data!.path).some(pointHitsRect)
+    }
+
+    intersectsCircle(circle: QTCircle<unknown>) {
+        const bezierOff = this.data!.pathOffset!
+        const pointHitsCircle = ({x, y}: { x: number, y: number }) => {
+            const pointRealX = x - bezierOff.x + this.x + this.width / 2
+            const pointRealY = y - bezierOff.y + this.y + this.height / 2
+            // hit if the distance between (centerpoint of path point) and (centerpoint of circle under test) is <= (sum of both circles' radiuses)
+            // not using sqrt under the assumption that √(Δx²+Δy²)<(r1+r2) is slower than Δx²+Δy²<(r1+r2)²
+            // also: Δx = x_circle - x_point (or viceversa, it doesn't matter because it's squared anyway)
+            return Math.pow(circle.x - pointRealX, 2) + Math.pow(circle.y - pointRealY, 2) <= Math.pow(this.pathRadius + circle.r, 2)
+        }
+        return util.getPathSegmentsInfo(this.data!.path).some(pointHitsCircle)
     }
 }
 

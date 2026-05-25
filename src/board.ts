@@ -30,8 +30,6 @@ export class SP1_50x50 extends Group {
         )
         super([...pads, ...vias], {
             selectable: false,
-            // originX: "left", originY: "top",
-            // top: 0, left: 0
         });
     }
 }
@@ -59,3 +57,53 @@ class SP1BoardPad extends Rect {
 }
 
 classRegistry.setClass(SP1BoardPad)
+
+export class ThroughHoleProtoboard extends Group {
+    private static numPadsX = 20;
+    private static numPadsY = 14;
+    static type = 'Board/ThroughHole';
+
+    constructor() {
+        const pads = Array(ThroughHoleProtoboard.numPadsX).fill(0).flatMap((_, i) =>
+            Array(ThroughHoleProtoboard.numPadsY).fill(0).map((_, j) =>
+                new ThroughHoleBoardPad(100 * mil * i + 50 * mil, 100 * mil * j + 50 * mil)
+            )
+        )
+        const vias = Array(ThroughHoleProtoboard.numPadsX).fill(0).flatMap((_, i) =>
+            Array(ThroughHoleProtoboard.numPadsY).fill(0).map((_, j) =>
+                new Circle({
+                    radius: 12 * mil,
+                    top: 100 * mil * j + 50 * mil, left: 100 * mil * i + 50 * mil,
+                    fill: "white",
+                    stroke: "orange",
+                })
+            )
+        )
+        super([...pads, ...vias], {
+            selectable: false,
+        });
+    }
+}
+
+classRegistry.setClass(ThroughHoleProtoboard)
+
+class ThroughHoleBoardPad extends Circle {
+    static type = "Board/ThroughHole/Pad"
+
+    constructor(x: number, y: number) {
+        super({
+            radius: 40 * mil,
+            top: y, left: x,
+            fill: "white",
+            stroke: "orange",
+        });
+
+        collisionManager.addElement(this)
+
+        this.on("collision:update", function (this: ThroughHoleBoardPad, ev) {
+            this.set("fill", ev.nowHitting.size > 0 ? "orange" : "white")
+        })
+    }
+}
+
+classRegistry.setClass(ThroughHoleBoardPad)
