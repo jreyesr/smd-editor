@@ -20,7 +20,7 @@ export class SP1_50x50 extends Group {
                             return new Circle({
                                 radius: 12 * mil,
                                 left: 50 * mil * i + 25 * mil, top: 50 * mil * j + 25 * mil,
-                                stroke: "orange", fill: "white"
+                                stroke: "orange", fill: "white", strokeWidth: 2,
                             })
                         } else {
                             return undefined
@@ -43,8 +43,7 @@ class SP1BoardPad extends Rect {
         super({
             width: 42 * mil, height: 42 * mil,
             top: y, left: x,
-            fill: "white",
-            stroke: "orange",
+            fill: "white", stroke: "orange", strokeWidth: 2
         });
 
         collisionManager.addElement(this)
@@ -73,8 +72,7 @@ export class ThroughHoleProtoboard extends Group {
                 new Circle({
                     radius: 12 * mil,
                     top: 100 * mil * j + 50 * mil, left: 100 * mil * i + 50 * mil,
-                    fill: "white",
-                    stroke: "orange",
+                    fill: "white", stroke: "orange", strokeWidth: 2,
                 })
             )
         )
@@ -93,8 +91,7 @@ class ThroughHoleBoardPad extends Circle {
         super({
             radius: 40 * mil,
             top: y, left: x,
-            fill: "white",
-            stroke: "orange",
+            fill: "white", stroke: "orange", strokeWidth: 2,
         });
 
         collisionManager.addElement(this)
