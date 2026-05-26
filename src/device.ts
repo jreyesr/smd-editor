@@ -308,7 +308,8 @@ export class SOIC extends Device {
                     fill: "white"
                 })
             ],
-            pins
+            pins,
+            props,
         )
         this.#label = label
     }
@@ -463,7 +464,8 @@ export class DIP extends Device {
                     fill: "white"
                 })
             ],
-            pins
+            pins,
+            props
         )
         this.#label = label
     }
@@ -610,7 +612,8 @@ export class SOT23 extends Device {
                     fill: "black"
                 })
             ],
-            pins
+            pins,
+            props
         )
         this.#label = label
     }

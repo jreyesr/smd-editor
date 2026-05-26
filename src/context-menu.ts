@@ -37,7 +37,7 @@ export function loadMenuOptions(canvas: Canvas) {
     const solderBtn = document.createElement("button")
     solderBtn.textContent = "Solder"
     solderBtn.classList.add("option")
-    solderBtn.addEventListener("click", (e) => {
+    solderBtn.addEventListener("click", () => {
         canvas.isDrawingMode = true
         contextMenu.hidePopover()
 
