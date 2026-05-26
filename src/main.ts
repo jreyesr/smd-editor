@@ -14,13 +14,14 @@ import {collisionManager} from "./collisions";
 import {Quadtree} from "@timohausmann/quadtree-ts";
 import {Pane} from "tweakpane";
 import * as EssentialsPlugin from '@tweakpane/plugin-essentials';
+import {loadMenuOptions} from "./context-menu";
 
 FabricText.ownDefaults.fontFamily = 'sans-serif';
 InteractiveFabricObject.createControls = () => ({controls: {}});
 const controls = controlsUtils.createObjectDefaultControls()
 InteractiveFabricObject.ownDefaults = {
     ...InteractiveFabricObject.ownDefaults,
-    cornerSize: 9,
+    cornerSize: 12,
     cornerColor: "green",
     transparentCorners: false,
     controls: {rotation: controls.mtr}, // only leave the rotation control (and movement because that isn't on a corner control)
@@ -29,7 +30,8 @@ InteractiveFabricObject.ownDefaults = {
 
 const canvasElement = document.getElementById("editor") as HTMLCanvasElement
 const canvas = new Canvas(canvasElement, {
-    width: 1600, height: 750,
+    width: 1500, height: 750,
+    stopContextMenu: false,
 });
 
 canvas.freeDrawingBrush = new PencilBrush(canvas)
@@ -102,7 +104,7 @@ canvas.elements.upper.el.addEventListener("keydown", function (ev) {
 const ui = document.getElementById('ui')!
 const pane = document.getElementById("controls")!
 
-function addDeviceToCanvas(dev: Device | Path) {
+export function addDeviceToCanvas(dev: Device | Path) {
     canvas.add(dev)
 
     if (dev instanceof Device) {
@@ -120,22 +122,11 @@ function addDeviceToCanvas(dev: Device | Path) {
     }
 }
 
-for (let deviceKind of components) {
-    const btn = document.createElement("button")
-    btn.textContent = "+ " + deviceKind.displayName
-    btn.addEventListener("click", () => {
-        const newDevice = new deviceKind.constructor(...(deviceKind.params || []))
-        addDeviceToCanvas(newDevice)
-        canvas.centerObject(newDevice)
-        newDevice.fire("moving") // recompute collisions
-    })
-    ui.appendChild(btn)
-}
 
-// solder lines button
-const solderBtn = document.createElement("button")
+loadMenuOptions(canvas)
 
-function onSolderAdded(path: Path) {
+
+export function onSolderAdded(path: Path) {
     // stack should always be as follows: base protoboard at the bottom, then all the solder Paths, then the components
     const allElemsExceptThisPath = canvas.getObjects().slice(0, -1)
     let topmostPathPosition = allElemsExceptThisPath.findLastIndex(e => e instanceof Path)
@@ -147,19 +138,6 @@ function onSolderAdded(path: Path) {
     collisionManager.addElement(path)
     path.fire("moving") // convince the collmanager to compute it
 }
-
-solderBtn.textContent = "Solder"
-solderBtn.addEventListener("click", (e) => {
-    solderBtn.disabled = true
-    canvas.isDrawingMode = true
-
-    canvas.once("path:created", (ev) => {
-        onSolderAdded(ev.path as Path)
-        solderBtn.disabled = false
-        canvas.isDrawingMode = false
-    })
-})
-ui.appendChild(solderBtn)
 
 const saveBtn = document.createElement("button")
 saveBtn.textContent = "Save"

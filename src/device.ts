@@ -151,22 +151,22 @@ export class Passive extends Device {
     static {
         components.push(
             {
-                displayName: "0402",
+                displayName: "0402 passive",
                 constructor: Passive,
                 params: [40 * mil, 20 * mil, "0402"]
             },
             {
-                displayName: "0603",
+                displayName: "0603 passive",
                 constructor: Passive,
                 params: [60 * mil, 30 * mil, "0603"]
             },
             {
-                displayName: "0805",
+                displayName: "0805 passive",
                 constructor: Passive,
                 params: [80 * mil, 50 * mil, "0805"]
             },
             {
-                displayName: "1206",
+                displayName: "1206 passive",
                 constructor: Passive,
                 params: [120 * mil, 60 * mil, "1206"]
             },
