@@ -5,12 +5,14 @@ import {addDeviceToCanvas, onSolderAdded} from "./main";
 const contextMenu = document.getElementById("contextMenu")!
 
 export function loadMenuOptions(canvas: Canvas) {
+    let lastShowEvent: MouseEvent
     canvas.on("contextmenu", (event) => {
         event.e.preventDefault()
 
         contextMenu.showPopover()
         contextMenu.style.top = (event.e as MouseEvent).clientY + "px"
         contextMenu.style.left = (event.e as MouseEvent).clientX + "px"
+        lastShowEvent = event.e as MouseEvent
     })
 
     for (let deviceKind of components) {
@@ -23,9 +25,10 @@ export function loadMenuOptions(canvas: Canvas) {
 
             const newDevice = new deviceKind.constructor(...(deviceKind.params || []))
             addDeviceToCanvas(newDevice)
-            // if possible, add the new device to where the click happened, but don't add it outside the visible
-            const clickedPointClamped = canvas.getViewportPoint(ev).min({x: canvas.width, y: canvas.height})
-            newDevice.setXY(clickedPointClamped)
+
+            const pointOfLastRightClick = canvas.getViewportPoint(lastShowEvent)
+            newDevice.setXY(pointOfLastRightClick)
+
             newDevice.setCoords();
             canvas.requestRenderAll();
 
