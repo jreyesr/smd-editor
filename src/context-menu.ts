@@ -23,7 +23,9 @@ export function loadMenuOptions(canvas: Canvas) {
 
             const newDevice = new deviceKind.constructor(...(deviceKind.params || []))
             addDeviceToCanvas(newDevice)
-            newDevice.setXY(canvas.getViewportPoint(ev))
+            // if possible, add the new device to where the click happened, but don't add it outside the visible
+            const clickedPointClamped = canvas.getViewportPoint(ev).min({x: canvas.width, y: canvas.height})
+            newDevice.setXY(clickedPointClamped)
             newDevice.setCoords();
             canvas.requestRenderAll();
 

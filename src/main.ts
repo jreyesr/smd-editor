@@ -8,8 +8,8 @@ import {
     Path,
     PencilBrush
 } from "fabric";
-import {components, Device, SerializedDevice} from "./device";
 import {SP1_50x50} from "./board";
+import {Device, SerializedDevice} from "./device";
 import {collisionManager} from "./collisions";
 import {Quadtree} from "@timohausmann/quadtree-ts";
 import {Pane} from "tweakpane";
