@@ -8,8 +8,8 @@ import {
     Path,
     PencilBrush
 } from "fabric";
-import {SP1_50x50} from "./board";
 import {Device, SerializedDevice} from "./device";
+import {SP1_50x50, ThroughHoleProtoboard} from "./board";
 import {collisionManager} from "./collisions";
 import {Quadtree} from "@timohausmann/quadtree-ts";
 import {Pane} from "tweakpane";
@@ -104,11 +104,11 @@ canvas.elements.upper.el.addEventListener("keydown", function (ev) {
 const ui = document.getElementById('ui')!
 const pane = document.getElementById("controls")!
 
-export function addDeviceToCanvas(dev: Device | Path) {
+export function addDeviceToCanvas(dev: Device | Path | SP1_50x50 | ThroughHoleProtoboard) {
     canvas.add(dev)
 
-    if (dev instanceof Device) {
-        dev.fire("moving") // to prod the collision detector
+    if (dev instanceof Device || dev instanceof SP1_50x50 || dev instanceof ThroughHoleProtoboard) {
+        dev.fire("moving") // to prod the collision detector, does nothing for the Board devices
         dev.on("mousedblclick", function () {
             const paramsPane = new Pane({container: pane, title: dev.type})
             paramsPane.registerPlugin(EssentialsPlugin)
@@ -146,6 +146,10 @@ saveBtn.addEventListener("click", () => {
         .map(obj => {
             if (obj instanceof Device) return {obj, data: obj.save()}
             else if (obj instanceof Path) return {obj, data: {path: obj.path}}
+            else if (obj instanceof SP1_50x50 || obj instanceof ThroughHoleProtoboard) return {
+                obj,
+                data: {sizeX: obj.numPadsX, sizeY: obj.numPadsY}
+            }
             return undefined
         })
         .filter(x => x !== undefined)
@@ -158,25 +162,31 @@ saveBtn.addEventListener("click", () => {
 })
 ui.appendChild(saveBtn)
 
-canvas.add(new SP1_50x50())
 if (localStorage.getItem("currentWork")) {
     const savedData = JSON.parse(localStorage.getItem("currentWork")!) as SerializedDevice[]
     for (let storedObject of savedData) {
-        const klass: (typeof Device | typeof Path) = classRegistry.getClass(storedObject.type)
-        let refreshedObject: Device | Path
-        if (klass.prototype instanceof Device) {
-            // TODO is there any way to collaborate with the type checker here?
+        const klass: (typeof Device | typeof Path | typeof SP1_50x50 | typeof ThroughHoleProtoboard) = classRegistry.getClass(storedObject.type)
+        let refreshedObject: Device | Path | SP1_50x50 | ThroughHoleProtoboard
+        if (klass.prototype instanceof Device)
             refreshedObject = (klass as typeof Device).load(storedObject.extraData)
-        } else {
-            // it's a solder line (a Path)
+        else if (klass === SP1_50x50 || klass === ThroughHoleProtoboard)
+            refreshedObject = new klass(storedObject.extraData.sizeX, storedObject.extraData.sizeY)
+        else if (klass === Path)
             refreshedObject = (canvas.freeDrawingBrush as PencilBrush).createPath(storedObject.extraData.path)
+        else {
+            console.error("Unknown class can't be loaded from LocalStorage", klass)
+            continue
         }
+
         refreshedObject.setX(storedObject.x)
         refreshedObject.setY(storedObject.y)
         refreshedObject.set("angle", storedObject.rotation)
 
         addDeviceToCanvas(refreshedObject)
     }
+} else {
+    // just add the default SMD protoboard
+    canvas.add(new SP1_50x50())
 }
 
 canvas.on("object:moving", function (ev) {

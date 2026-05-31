@@ -46,7 +46,8 @@ touch to become electrically connected.
 
 By toggling the Ratsnest checkbox, you can display lines that connect device pins that are electrically connected. Two 
 pins are connected if they share a board pad, or if they are connected via solder lines. This is equivalent to a 
-"netlist" in a schematic program.
+"netlist" in a schematic program. Note the pink dashed lines in the image below, they indicate pairs of pins which are
+connected to each other.
 
 ![a screenshot of the editor with Ratsnets mode activated, displaying pink lines that join device pins that are electrically connected, either directly or via solder lines](public/images/ratsnest.png)
 

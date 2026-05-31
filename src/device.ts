@@ -1,4 +1,4 @@
-import {Group, FabricObject, Rect, Circle, FabricObjectProps, FabricText, classRegistry, util} from "fabric";
+import {Circle, classRegistry, FabricObject, FabricObjectProps, FabricText, Group, Rect, util} from "fabric";
 import {collisionManager} from "./collisions";
 import {ListBladeApi, Pane, TextBladeApi} from "tweakpane";
 import {ButtonGridApi} from "@tweakpane/plugin-essentials";
@@ -690,14 +690,10 @@ export class SOT23 extends Device {
         };
     }
 
-    // static override load(serialized: DIPSerializedData): Device {
-    //     const dev = new DIP(serialized.height, serialized.numPins, serialized.tag)
-    //     dev.missingPinNumbers = new Set<number>(serialized.missingPinNumbers ?? [])
-    //     dev.pins = DIP.makePins(dev.numPins, dev.missingPinNumbers)
-    //     dev.setElements()
-    //     return dev
-    // }
+    static override load(serialized: SOT23SerializedData): Device {
+        return new SOT23(serialized.tag, new Set(serialized.missingPinNumbers))
+    }
 }
 
-classRegistry.setClass(DIP)
+classRegistry.setClass(SOT23)
 

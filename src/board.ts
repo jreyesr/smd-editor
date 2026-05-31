@@ -1,20 +1,26 @@
 import {Circle, classRegistry, Group, Rect} from "fabric";
 import {mil} from "./device";
 import {collisionManager} from "./collisions";
+import {Pane} from "tweakpane";
+
 
 export class SP1_50x50 extends Group {
-    private static numPadsX = 25;
-    private static numPadsY = 18;
     static type = 'Board/SP1_50x50'
 
-    constructor() {
-        const pads = Array(SP1_50x50.numPadsX).fill(0).flatMap((_, i) =>
-            Array(SP1_50x50.numPadsY).fill(0).map((_, j) =>
+    private setPads() {
+        const padsAndVias = SP1_50x50.generatePads(this.numPadsX, this.numPadsY)
+        this.removeAll()
+        this.add(...padsAndVias)
+    }
+
+    private static generatePads(numPadsX: number, numPadsY: number) {
+        const pads = Array(numPadsX).fill(0).flatMap((_, i) =>
+            Array(numPadsY).fill(0).map((_, j) =>
                 new SP1BoardPad(50 * mil * i + 25 * mil, 50 * mil * j + 25 * mil)
             )
         )
-        const vias = Array(SP1_50x50.numPadsX).fill(0).flatMap((_, i) =>
-            Array(SP1_50x50.numPadsY).fill(0)
+        const vias = Array(numPadsX).fill(0).flatMap((_, i) =>
+            Array(numPadsY).fill(0)
                 .map((_, j) => {
                         if ((i % 4 === 1) && (j % 4 === 1)) {
                             return new Circle({
@@ -28,9 +34,25 @@ export class SP1_50x50 extends Group {
                     }
                 ).filter(x => x !== undefined)
         )
-        super([...pads, ...vias], {
+        return [...pads, ...vias]
+    }
+
+    constructor(public numPadsX = 25, public numPadsY = 18) {
+        const padsAndVias = SP1_50x50.generatePads(numPadsX, numPadsY)
+        super(padsAndVias, {
             selectable: false,
         });
+    }
+
+    setupParametersPane(pane: Pane): void {
+        // pane.addBinding(this, "numPadsX", {
+        //     min: 5,
+        //     max: 100,
+        //     step: 1,
+        // }).on("change", ev => {
+        //     this.setPads()
+        //     this.canvas?.requestRenderAll()
+        // })
     }
 }
 
@@ -54,21 +76,17 @@ class SP1BoardPad extends Rect {
     }
 }
 
-classRegistry.setClass(SP1BoardPad)
-
 export class ThroughHoleProtoboard extends Group {
-    private static numPadsX = 20;
-    private static numPadsY = 14;
     static type = 'Board/ThroughHole';
 
-    constructor() {
-        const pads = Array(ThroughHoleProtoboard.numPadsX).fill(0).flatMap((_, i) =>
-            Array(ThroughHoleProtoboard.numPadsY).fill(0).map((_, j) =>
+    private static generatePads(numPadsX: number, numPadsY: number) {
+        const pads = Array(numPadsX).fill(0).flatMap((_, i) =>
+            Array(numPadsY).fill(0).map((_, j) =>
                 new ThroughHoleBoardPad(100 * mil * i + 50 * mil, 100 * mil * j + 50 * mil)
             )
         )
-        const vias = Array(ThroughHoleProtoboard.numPadsX).fill(0).flatMap((_, i) =>
-            Array(ThroughHoleProtoboard.numPadsY).fill(0).map((_, j) =>
+        const vias = Array(numPadsX).fill(0).flatMap((_, i) =>
+            Array(numPadsY).fill(0).map((_, j) =>
                 new Circle({
                     radius: 12 * mil,
                     top: 100 * mil * j + 50 * mil, left: 100 * mil * i + 50 * mil,
@@ -76,9 +94,28 @@ export class ThroughHoleProtoboard extends Group {
                 })
             )
         )
-        super([...pads, ...vias], {
+        return [...pads, ...vias]
+    }
+
+    private setPads() {
+        const padsAndVias = ThroughHoleProtoboard.generatePads(this.numPadsX, this.numPadsY)
+        this.removeAll()
+        this.add(...padsAndVias)
+    }
+
+    constructor(public numPadsX = 20, public numPadsY = 14) {
+        const padsAndVias = ThroughHoleProtoboard.generatePads(numPadsX, numPadsY)
+        super(padsAndVias, {
             selectable: false,
         });
+    }
+
+    setupParametersPane(pane: Pane): void {
+        // pane.addBinding(this, "numPadsX", {
+        //     min: 5
+        // }).on("change", ev => {
+        //     this.setPads()
+        // })
     }
 }
 
@@ -101,5 +138,3 @@ class ThroughHoleBoardPad extends Circle {
         })
     }
 }
-
-classRegistry.setClass(ThroughHoleBoardPad)
