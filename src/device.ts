@@ -170,6 +170,11 @@ export class Passive extends Device {
                 constructor: Passive,
                 params: [120 * mil, 60 * mil, "1206"]
             },
+            {
+                displayName: "0612 Current sense",
+                constructor: Passive,
+                params: [60 * mil, 120 * mil, "mΩ"]
+            }
         )
     }
     static type = "Device/Passive2Pin"
