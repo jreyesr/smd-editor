@@ -7,11 +7,11 @@ import {Pane} from "tweakpane";
 export class SP1_50x50 extends Group {
     static type = 'Board/SP1_50x50'
 
-    private setPads() {
-        const padsAndVias = SP1_50x50.generatePads(this.numPadsX, this.numPadsY)
-        this.removeAll()
-        this.add(...padsAndVias)
-    }
+    // private setPads() {
+    //     const padsAndVias = SP1_50x50.generatePads(this.numPadsX, this.numPadsY)
+    //     this.removeAll()
+    //     this.add(...padsAndVias)
+    // }
 
     private static generatePads(numPadsX: number, numPadsY: number) {
         const pads = Array(numPadsX).fill(0).flatMap((_, i) =>
@@ -97,11 +97,11 @@ export class ThroughHoleProtoboard extends Group {
         return [...pads, ...vias]
     }
 
-    private setPads() {
-        const padsAndVias = ThroughHoleProtoboard.generatePads(this.numPadsX, this.numPadsY)
-        this.removeAll()
-        this.add(...padsAndVias)
-    }
+    // private setPads() {
+    //     const padsAndVias = ThroughHoleProtoboard.generatePads(this.numPadsX, this.numPadsY)
+    //     this.removeAll()
+    //     this.add(...padsAndVias)
+    // }
 
     constructor(public numPadsX = 20, public numPadsY = 14) {
         const padsAndVias = ThroughHoleProtoboard.generatePads(numPadsX, numPadsY)
