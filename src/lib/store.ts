@@ -25,7 +25,7 @@ export async function getDesign(id: string): Promise<StoredDesign> {
     return {
         id: id,
         name: "My Design",
-        data: JSON.parse(localStorage.getItem("currentWork")!)
+        data: JSON.parse(localStorage.getItem("currentWork") || "[]")
     }
 }
 
