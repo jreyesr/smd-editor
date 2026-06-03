@@ -9,7 +9,8 @@
 
     let {data}: PageProps = $props();
 
-    let canvasEl: HTMLCanvasElement, paramsPane: HTMLElement;
+    let canvasEl: HTMLCanvasElement;
+    let paramsPane: HTMLElement;
     let canvas: Canvas | null = $state(null)
     $effect(() => {
         if (canvas) return; // don't double-initialize the canvas

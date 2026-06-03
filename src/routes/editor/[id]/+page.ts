@@ -5,3 +5,4 @@ export const load: PageLoad = async ({params}) => {
     return getDesign(params.id)
 }
 export const ssr = false
+export const prerender = false
