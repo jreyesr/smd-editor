@@ -1,34 +1,60 @@
 import type {SerializedDevice} from "$lib/device";
+import {type DBSchema, openDB} from "idb";
 
 export type StoredDesign = {
-    id: string,
+    id: number,
     name: string,
     data: SerializedDevice[]
 }
 
+interface DB extends DBSchema {
+    designs: {
+        value: {
+            id?: number,
+            name: string;
+            data: any[];
+            dateCreated: string;
+        };
+        key: number;
+    };
+}
+
+
+function getDB() {
+    return openDB<DB>('smd-editor', 1, {
+        upgrade(db, oldVersion) {
+            if (oldVersion < 1) {
+                db.createObjectStore('designs', {
+                    keyPath: "id",
+                    autoIncrement: true
+                })
+            }
+        }
+    })
+}
+
 export async function listDesigns(): Promise<StoredDesign[]> {
-    if (localStorage.getItem("currentWork")) {
-        return [{
-            id: "single",
-            name: "My Design",
-            data: JSON.parse(localStorage.getItem("currentWork")!)
-        }]
-    }
-    return []
+    const db = await getDB()
+    return (await db.getAll('designs')) as StoredDesign[]
 }
 
 export async function createDesign(): Promise<string> {
-    return "single"
+    const db = await getDB()
+    return (await db.add('designs', {
+        name: "My New Design",
+        dateCreated: new Date().toISOString(),
+        data: []
+    })).toString()
 }
 
 export async function getDesign(id: string): Promise<StoredDesign> {
-    return {
-        id: id,
-        name: "My Design",
-        data: JSON.parse(localStorage.getItem("currentWork") || "[]")
-    }
+    const db = await getDB()
+    return (await db.get("designs", parseInt(id))) as StoredDesign
 }
 
-export async function saveDesign(id: String, data: StoredDesign["data"]) {
-    localStorage.setItem("currentWork", JSON.stringify(data))
+export async function saveDesign(id: string, data: StoredDesign["data"]) {
+    const db = await getDB()
+    const currentVersion = (await db.get('designs', parseInt(id)))!
+
+    await db.put("designs", {...currentVersion, data, id: parseInt(id)})
 }

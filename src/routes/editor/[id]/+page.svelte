@@ -13,9 +13,12 @@
     let paramsPane: HTMLElement;
     let canvas: Canvas | null = $state(null)
     $effect(() => {
-        if (canvas) return; // don't double-initialize the canvas
-        canvas = setupEditor(canvasEl)
+        if (!canvas) { // don't double-initialize the canvas
+            canvas = setupEditor(canvasEl)
+        }
+        if (!data.data) return;
 
+        canvas.clear()
         if (data.data.length === 0) {
             initializeEmptyDesign(canvas)
         } else {
@@ -40,7 +43,7 @@
                 x: obj.getX(), y: obj.getY(), rotation: obj.angle,
                 extraData: data
             }))
-        saveDesign(data.id, dataToSave)
+        saveDesign(data.id.toString(), dataToSave)
     }
 
     let enableQuadtree = $state(false)
@@ -60,7 +63,8 @@
 </div>
 
 <h1>{data.name}
-<button onclick={saveCurrentDesign}>Save</button> </h1>
+    <button onclick={saveCurrentDesign}>Save</button>
+</h1>
 
 <ul class="instructions">
     <li>Double click → configure device properties</li>
