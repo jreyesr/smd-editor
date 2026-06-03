@@ -51,3 +51,42 @@ connected to each other.
 
 ![a screenshot of the editor with Ratsnets mode activated, displaying pink lines that join device pins that are electrically connected, either directly or via solder lines](public/images/ratsnest.png)
 
+### DEV
+
+Known errors/TODOs:
+
+- [x] BUG solderlines restored from LS don't have collisions anymore
+    - even if dragging!
+- [x] BUG SOIC&DIP devices don't preserve their disabled pins on save->restore
+- [x] BUG dragging a group of things breaks colldet against the protoboard
+    * check if it's that the move event fires on the group and doesn't propagate to the individual (Device|Path)s
+    - [ ] BUG2 now it works while dragging but colldet breaks after deselecting
+- [ ] BUG repeatedly removing&readding a whole side of pins (for SOIC, DIP, SOT23 packages) messes up side-to-side alignment
+
+- [x] add holes every 4 pads in X, Y
+- [x] readd the through-hole protoboard
+  - [ ] some way of changing from SMD to TH proto?
+  - [x] BUG colldet of L-shaped solder uses BB of entire solderline
+- [ ] preview the board saved on LocalStorage
+    * render as PNG???
+- [ ] clear the saved board
+- [ ] add the params for Passive and SOIC
+    * \+ make it work without needing a Save button
+    * ✓ see if ButtonGrid and others are usable
+- [x] allow hiding some pins in SOIC devices
+  - [x] also on DIP and SOT23
+- [x] see if it's possible to have the num of pins for SOIC devs as a Tweakpane param
+- [x] readd DIP devices
+- [x] add SOT-23 devices
+    * maybe as SOT-23-6 with deletable pins?
+- [x] right-click context menu to add new Device, replace the list of buttons
+  - [x] BUG don't add new devices outside the visible canvas area
+- [ ] undo/redo stack???
+- [ ] netlist-ish features
+    - [x] link pin->pin, display ratsnest unless connected via pads/solder
+    * show netlist
+    * import from some standard netlist format???
+    * export to some standard netlist format???
+- [ ] import KiCAD schematic?
+    - \+ netlist/connectivity
+    - \+ component footprints???
