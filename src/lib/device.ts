@@ -1,4 +1,4 @@
-import {Circle, classRegistry, FabricObject, FabricObjectProps, FabricText, Group, Rect, util} from "fabric";
+import {Circle, classRegistry, FabricObject, type FabricObjectProps, FabricText, Group, Rect, util} from "fabric";
 import {collisionManager} from "./collisions";
 import {ListBladeApi, Pane, TextBladeApi} from "tweakpane";
 import {ButtonGridApi} from "@tweakpane/plugin-essentials";
@@ -8,11 +8,12 @@ export const mm = PIXELS_PER_MM;
 export const inch = PIXELS_PER_MM * 25.4;
 export const mil = inch / 1000;
 
-export const components: {
+export type ContextMenuEntry = {
     displayName: string,
     constructor: new (...args: any[]) => Device,
     params?: any[]
-}[] = []
+}
+export const components: ContextMenuEntry[] = []
 
 class RectangularPad extends Rect {
     static type = "Device/RectangularPad"

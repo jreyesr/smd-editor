@@ -1,6 +1,6 @@
-import {Circle, FabricObject, Path, TEvent, util} from "fabric";
-import {Quadtree, Rectangle as QTRectangle, Circle as QTCircle, RectangleProps} from "@timohausmann/quadtree-ts";
-import {solderRadius} from "./main";
+import {Circle, FabricObject, Path, type TEvent, util} from "fabric";
+import {Quadtree, Rectangle as QTRectangle, Circle as QTCircle, type RectangleProps} from "@timohausmann/quadtree-ts";
+import {solderRadius} from "$lib/solder";
 
 function fabricToQuadtree(f: FabricObject): QTShapes<FabricObject> {
     switch (true) {

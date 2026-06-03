@@ -2,14 +2,17 @@
   "name": "smd",
   "version": "0.0.0",
   "description": "",
-  "main": "src/main.ts",
+  "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite dev",
     "start": "vite",
     "build": "tsc && vite build",
     "serve": "vite preview",
     "test": "npm run build && npx playwright test",
-    "test:integration-update": "npx playwright test --update-snapshots"
+    "test:integration-update": "npx playwright test --update-snapshots",
+    "prepare": "svelte-kit sync || echo ''",
+    "check": "svelte-kit sync && svelte-check --tsconfig ./jsconfig.json",
+    "check:watch": "svelte-kit sync && svelte-check --tsconfig ./jsconfig.json --watch"
   },
   "repository": {
     "url": "https://github.com/jreyesr/smd-editor"
@@ -23,13 +26,19 @@
     "@timohausmann/quadtree-ts": "^2.3.0",
     "@tweakpane/plugin-essentials": "^0.2.1",
     "fabric": "^7.3.1",
+    "idb": "^8.0.3",
     "tweakpane": "^4.0.5"
   },
   "devDependencies": {
     "@playwright/test": "^1.49.1",
+    "@sveltejs/adapter-static": "^3.0.10",
+    "@sveltejs/kit": "^2.61.1",
+    "@sveltejs/vite-plugin-svelte": "^7.1.2",
     "@tweakpane/core": "^2.0.5",
     "@types/node": "^22.10.2",
-    "typescript": "5.9.3",
-    "vite": "6.4.2"
+    "svelte": "^5.56.0",
+    "svelte-check": "^4.4.8",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.14"
   }
 }
