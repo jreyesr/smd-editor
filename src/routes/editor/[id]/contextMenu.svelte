@@ -30,6 +30,7 @@
 
         const newDevice = new deviceKind.constructor(...(deviceKind.params || []))
         addDeviceToCanvas(canvas, newDevice, paramsPane)
+        canvas.setActiveObject(newDevice)
 
         const pointOfLastRightClick = canvas.getViewportPoint(lastShowEvent!)
         newDevice.setXY(pointOfLastRightClick)
