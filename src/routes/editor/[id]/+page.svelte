@@ -5,9 +5,10 @@
     import ContextMenu from './contextMenu.svelte';
     import {components, Device, type SerializedDevice} from "$lib/device";
     import {SP1_50x50, ThroughHoleProtoboard} from "$lib/board";
-    import {saveDesign} from "$lib/store";
+    import {saveDesign, updateDesignName} from "$lib/store";
 
     let {data}: PageProps = $props();
+    let name = $state(data.name);
 
     let canvasEl: HTMLCanvasElement;
     let paramsPane: HTMLElement;
@@ -46,6 +47,16 @@
         saveDesign(data.id.toString(), dataToSave)
     }
 
+    function updateName(ev: FocusEvent) {
+        updateDesignName(data.id.toString(), (ev.target as HTMLInputElement).value)
+    }
+
+    function updateNameFromKey(ev: KeyboardEvent) {
+        if (ev.code === "Enter" || ev.code === "NumpadEnter") {
+            (ev.target as HTMLInputElement).blur() // this will fire the actual save
+        }
+    }
+
     let enableQuadtree = $state(false)
     let enableRatsnest = $state(false)
     $effect(() => {
@@ -62,7 +73,8 @@
         anything you do here will be lost on page refresh. You've been warned.</p>
 </div>
 
-<h1>{data.name}
+<h1>
+    <input id="name" value={name} onblur={updateName} onkeydown={updateNameFromKey}/>
     <button onclick={saveCurrentDesign}>Save</button>
 </h1>
 
@@ -96,5 +108,17 @@
 
     #editor {
         border: 1px solid lightgray;
+    }
+
+    input#name {
+        border: none;
+        font-size: 1em;
+        font-weight: bold;
+        border-bottom: 1px solid lightgrey;
+
+        &:focus {
+            outline: none;
+            border-bottom: 1px solid black;
+        }
     }
 </style>
