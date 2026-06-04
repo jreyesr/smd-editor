@@ -20,29 +20,31 @@
 <h1>List of designs</h1>
 
 <div class="cards-container">
-    <button onclick={addDesign} class="design-card new-design">
-        + Create new design...
-    </button>
-
     {#if data.designs.length > 0}
 
         {#each data.designs as design}
             {@render designCard(design)}
         {/each}
     {/if}
+
+    <button onclick={addDesign} class="design-card new-design">
+        + Create new design...
+    </button>
+
 </div>
 
 <style>
     .cards-container {
         display: flex;
-        flex-direction: row;
+        flex-flow: row wrap;
         justify-content: center;
         gap: 1em;
     }
 
     .design-card {
         background-color: gray;
-        flex-basis: 50%;
+        flex-basis: 49%;
+        max-width: 49%;
         padding: 2em;
         text-align: center;
         align-content: center;
@@ -50,7 +52,6 @@
     }
 
     .new-design {
-        flex-basis: 50%;
         border: 2px dashed gray;
         text-decoration: none;
         text-decoration-color: unset;
