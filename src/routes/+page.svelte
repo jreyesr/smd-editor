@@ -13,15 +13,14 @@
 
 {#snippet designCard(designData: StoredDesign)}
     <button onclick={() => goto(`/editor/${designData.id}`)} class="design-card">
-        {designData.name} <small>({designData.data.length} elements)</small>
+        {designData.name} <small>({designData.data.filter(el => el.type.startsWith("device/")).length} elements)</small>
     </button>
 {/snippet}
 
-<h1>List of designs</h1>
+<h1>Your designs</h1>
 
 <div class="cards-container">
     {#if data.designs.length > 0}
-
         {#each data.designs as design}
             {@render designCard(design)}
         {/each}
@@ -42,13 +41,14 @@
     }
 
     .design-card {
-        background-color: gray;
+        background-color: lightcyan;
         flex-basis: 49%;
         max-width: 49%;
         padding: 2em;
         text-align: center;
         align-content: center;
         cursor: pointer;
+        font-size: 1.2em;
     }
 
     .new-design {
