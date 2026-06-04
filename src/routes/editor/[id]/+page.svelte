@@ -1,10 +1,12 @@
 <script lang="ts">
     import type {PageProps} from './$types';
-    import {initializeEmptyDesign, loadDataIntoCanvas, setupDebugViews, setupEditor} from "$lib/editor";
-    import {type Canvas, Path} from "fabric";
+    import {
+        getDataToSave, initializeEmptyDesign, loadDataIntoCanvas, setupDebugViews, setupEditor,
+        takeCanvasScreenshot
+    } from "$lib/editor";
+    import {type Canvas} from "fabric";
     import ContextMenu from './contextMenu.svelte';
-    import {components, Device, type SerializedDevice} from "$lib/device";
-    import {SP1_50x50, ThroughHoleProtoboard} from "$lib/board";
+    import {components} from "$lib/device";
     import {saveDesign, updateDesignName} from "$lib/store";
 
     let {data}: PageProps = $props();
@@ -28,23 +30,9 @@
     })
 
     function saveCurrentDesign() {
-        const dataToSave = canvas!.getObjects()
-            .map(obj => {
-                if (obj instanceof Device) return {obj, data: obj.save()}
-                else if (obj instanceof Path) return {obj, data: {path: obj.path}}
-                else if (obj instanceof SP1_50x50 || obj instanceof ThroughHoleProtoboard) return {
-                    obj,
-                    data: {sizeX: obj.numPadsX, sizeY: obj.numPadsY}
-                }
-                return undefined
-            })
-            .filter(x => x !== undefined)
-            .map(({obj, data}): SerializedDevice => ({
-                type: obj.type,
-                x: obj.getX(), y: obj.getY(), rotation: obj.angle,
-                extraData: data
-            }))
-        saveDesign(data.id.toString(), dataToSave)
+        const dataToSave = getDataToSave(canvas!)
+        const screenshot = takeCanvasScreenshot(canvas!)
+        saveDesign(data.id.toString(), dataToSave, screenshot)
     }
 
     function updateName(ev: FocusEvent) {

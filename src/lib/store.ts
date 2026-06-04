@@ -4,7 +4,8 @@ import {type DBSchema, openDB} from "idb";
 export type StoredDesign = {
     id: number,
     name: string,
-    data: SerializedDevice[]
+    data: SerializedDevice[],
+    thumbnail?: string,
 }
 
 interface DB extends DBSchema {
@@ -14,6 +15,7 @@ interface DB extends DBSchema {
             name: string;
             data: any[];
             dateCreated: string;
+            thumbnail?: string;
         };
         key: number;
     };
@@ -52,11 +54,11 @@ export async function getDesign(id: string): Promise<StoredDesign> {
     return (await db.get("designs", parseInt(id))) as StoredDesign
 }
 
-export async function saveDesign(id: string, data: StoredDesign["data"]) {
+export async function saveDesign(id: string, data: StoredDesign["data"], thumbnail?: string) {
     const db = await getDB()
     const currentVersion = (await db.get('designs', parseInt(id)))!
 
-    await db.put("designs", {...currentVersion, data, id: parseInt(id)})
+    await db.put("designs", {...currentVersion, data, thumbnail, id: parseInt(id)})
 }
 
 export async function updateDesignName(id: string, newName: string) {

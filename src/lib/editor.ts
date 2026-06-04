@@ -79,6 +79,14 @@ export function getDataToSave(canvas: Canvas) {
         }))
 }
 
+export function takeCanvasScreenshot(canvas: Canvas) {
+    return canvas.toDataURL({
+        format: "png",
+        multiplier: .3,
+        // filter: (element) => !(element instanceof SP1_50x50 || element instanceof ThroughHoleProtoboard),
+    })
+}
+
 export function loadDataIntoCanvas(canvas: Canvas, data: SerializedDevice[], paramsPane: HTMLElement) {
     for (let storedObject of data) {
         const klass: (typeof Device | typeof Path | typeof SP1_50x50 | typeof ThroughHoleProtoboard) = classRegistry.getClass(storedObject.type)

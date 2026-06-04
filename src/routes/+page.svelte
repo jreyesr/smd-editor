@@ -14,6 +14,9 @@
 {#snippet designCard(designData: StoredDesign)}
     <button onclick={() => goto(`/editor/${designData.id}`)} class="design-card">
         {designData.name} <small>({designData.data.filter(el => el.type.startsWith("device/")).length} elements)</small>
+        {#if designData.thumbnail}
+            <img class="thumbnail" src={designData.thumbnail} alt={"thumbnail for design " + designData.name}/>
+        {/if}
     </button>
 {/snippet}
 
@@ -42,13 +45,17 @@
 
     .design-card {
         background-color: lightcyan;
-        flex-basis: 49%;
-        max-width: 49%;
+        flex-basis: 32%;
+        max-width: 32%;
         padding: 2em;
         text-align: center;
         align-content: center;
         cursor: pointer;
         font-size: 1.2em;
+
+        & .thumbnail {
+            width: 100%;
+        }
     }
 
     .new-design {
