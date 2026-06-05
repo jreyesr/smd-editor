@@ -402,9 +402,10 @@ type DIPSerializedData = {
 }
 
 export class DIP extends Device {
-    // https://ww1.microchip.com/downloads/en/PackagingSpec/00049w.pdf
+    // https://ww1.microchip.com/downloads/en/PackagingSpec/00049w.pdf dimension D
     private static readonly STANDARD_DIMENSIONS: Record<number, number> = {
         8: 9.46 * mm,
+        // yes, at least Microchip's DIP14 and DIP16 have the same length
         14: 19.05 * mm,
         16: 19.05 * mm
     }
@@ -719,3 +720,77 @@ export class SOT23 extends Device {
 
 classRegistry.setClass(SOT23)
 
+export class Connector extends Device {
+    static {
+        components.push(
+            {
+                displayName: "4-pin connector",
+                constructor: Connector,
+                params: [4]
+            },
+        )
+    }
+    static type = "Device/Connector/100mil"
+    private static padWidth = 60 * mil
+    private static connectorWidth = 100 * mil;
+
+    static makePins(numPins: number) {
+        const pins: RectangularPad[] = []
+        const yOffset = 100 * mil * (numPins - 1) / 2; // e.g. a 4-pin connector is offset 1.5
+        for (let i = 0; i < numPins; i++) {
+            pins.push(new RectangularPad(
+                Connector.padWidth, 35 * mil,
+                /*
+                └─────┴────────────┘
+                  PW         CW
+                we need to know the final position of the pad's center + relative to the whole group's center *
+                (PW+CW)/2  ↴
+                └──+──┴────*───────┘
+                PW/2
+                so the distance from + to * is (PW+CW)/2 - PW/2 = PW/2+CW/2 - PW/2 = CW/2
+                then also negative because distance here must be from * to +, inverted
+                */
+                -Connector.connectorWidth / 2, 100 * mil * i - yOffset))
+        }
+        return pins
+    }
+
+    #outline: Rect
+
+    constructor(private numPins: number, props?: Partial<FabricObjectProps>) {
+        const pins = Connector.makePins(numPins)
+        const outline = new Rect({
+            width: Connector.connectorWidth, height: 100 * mil * numPins,
+            /*
+            └───┴──────────┘
+             PW      CW
+            but all distances are referenced to the whole group's center *, so:
+                      (CW/2)
+            └───┴──*──+────┘(A)
+                   (PW+CW)/2
+            the rectangle's center + is CW/2 to left of right edge A, so distance * to + is CW/2
+            */
+            left: Connector.padWidth / 2, top: 0,
+            fill: "white", stroke: "black", strokeWidth: 1
+        })
+        super([
+            outline
+        ], pins, props)
+
+        this.#outline = outline
+    }
+
+    override setupParametersPane(pane: Pane) {
+        // @ts-expect-error doesn't recognize "numPins" as keyof this
+        pane.addBinding(this, "numPins", {
+            min: 2, max: 40, step: 1,
+        }).on("change", (ev) => {
+            this.pins = Connector.makePins(this.numPins)
+            this.#outline.height = 100 * mil * this.numPins
+            this.setElements()
+            this.canvas?.requestRenderAll()
+        });
+    }
+}
+
+classRegistry.setClass(Connector)
