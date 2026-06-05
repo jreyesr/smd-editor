@@ -67,10 +67,10 @@ Known errors/TODOs:
 - [x] readd the through-hole protoboard
   - [ ] some way of changing from SMD to TH proto?
   - [x] BUG colldet of L-shaped solder uses BB of entire solderline
-- [ ] preview the board saved on LocalStorage
-    * render as PNG???
+- [x] preview the board saved on LocalStorage
+    - [x] render as PNG???
 - [ ] clear the saved board
-- [ ] add the params for Passive and SOIC
+- [x] add the params for Passive and SOIC
     * \+ make it work without needing a Save button
     * ✓ see if ButtonGrid and others are usable
 - [x] allow hiding some pins in SOIC devices

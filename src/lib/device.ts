@@ -267,6 +267,8 @@ export class SOIC extends Device {
     }
     static type = "Device/SOIC"
     #label: FabricText
+    #outline: Rect
+    #pin1Marker: Circle
 
     /**
      * Creates the RectangularPads for this device's pins
@@ -301,23 +303,27 @@ export class SOIC extends Device {
         const label = new FabricText(tag, {
             left: 0, top: 0, height: bodyHeight
         })
+        const outline = new Rect({width: 3.91 * mm, height: bodyHeight, stroke: "black", strokeWidth: 1, fill: "white"})
+        const pin1Marker = new Circle({
+            radius: .3 * mm,
+            left: -1.2 * mm, // center offset .75mm from edge
+            top: -bodyHeight / 2 + .75 * mm,
+            stroke: "black",
+            strokeWidth: 1,
+            fill: "white"
+        })
         super(
             [
-                new Rect({width: 3.91 * mm, height: bodyHeight, stroke: "black", strokeWidth: 1, fill: "white"}),
+                outline,
                 label,
-                new Circle({
-                    radius: .3 * mm,
-                    left: -1.2 * mm, // center offset .75mm from edge
-                    top: -bodyHeight / 2 + .75 * mm,
-                    stroke: "black",
-                    strokeWidth: 1,
-                    fill: "white"
-                })
+                pin1Marker
             ],
             pins,
             props,
         )
         this.#label = label
+        this.#outline = outline
+        this.#pin1Marker = pin1Marker
     }
 
     override setupParametersPane(pane: Pane) {
@@ -338,6 +344,8 @@ export class SOIC extends Device {
         })) as ListBladeApi<number>).on("change", ev => {
             this.numPins = ev.value
             this.pins = SOIC.makePins(ev.value, this.missingPinNumbers)
+            this.#outline.height = SOIC.STANDARD_DIMENSIONS[ev.value]
+            this.#pin1Marker.top = -SOIC.STANDARD_DIMENSIONS[ev.value] / 2 + .75 * mm
             this.setElements()
             this.canvas?.requestRenderAll()
         });
@@ -421,6 +429,8 @@ export class DIP extends Device {
     }
     static type = "Device/DIP"
     #label: FabricText
+    #outline: Rect
+    #pin1Marker: Circle
 
     /**
      * Creates the RectangularPads for this device's pins
@@ -456,24 +466,28 @@ export class DIP extends Device {
         const label = new FabricText(tag, {
             left: 0, top: 0, height: bodyHeight
         })
+        // width = E1
+        const outline = new Rect({width: 250 * mil, height: bodyHeight, stroke: "black", strokeWidth: 1, fill: "white"})
+        const pin1Marker = new Circle({
+            radius: .3 * mm,
+            left: -250 * mil / 2 + .75 * mm, // center offset .75mm from edge
+            top: -bodyHeight / 2 + .75 * mm,
+            stroke: "black",
+            strokeWidth: 1,
+            fill: "white"
+        })
         super(
             [
-                // width = E1
-                new Rect({width: 250 * mil, height: bodyHeight, stroke: "black", strokeWidth: 1, fill: "white"}),
+                outline,
                 label,
-                new Circle({
-                    radius: .3 * mm,
-                    left: -250 * mil / 2 + .75 * mm, // center offset .75mm from edge
-                    top: -bodyHeight / 2 + .75 * mm,
-                    stroke: "black",
-                    strokeWidth: 1,
-                    fill: "white"
-                })
+                pin1Marker
             ],
             pins,
             props
         )
         this.#label = label
+        this.#outline = outline
+        this.#pin1Marker = pin1Marker
     }
 
     override setupParametersPane(pane: Pane) {
@@ -494,6 +508,8 @@ export class DIP extends Device {
         })) as ListBladeApi<number>).on("change", ev => {
             this.numPins = ev.value
             this.pins = DIP.makePins(ev.value, this.missingPinNumbers)
+            this.#outline.height = DIP.STANDARD_DIMENSIONS[ev.value]
+            this.#pin1Marker.top = -DIP.STANDARD_DIMENSIONS[ev.value] / 2 + .75 * mm
             this.setElements()
             this.canvas?.requestRenderAll()
         });
