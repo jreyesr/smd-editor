@@ -720,6 +720,10 @@ export class SOT23 extends Device {
 
 classRegistry.setClass(SOT23)
 
+type ConnectorSerializedData = {
+    numPins: number
+}
+
 export class Connector extends Device {
     static {
         components.push(
@@ -790,6 +794,16 @@ export class Connector extends Device {
             this.setElements()
             this.canvas?.requestRenderAll()
         });
+    }
+
+    override save(): ConnectorSerializedData {
+        return {
+            numPins: this.numPins,
+        };
+    }
+
+    static override load(serialized: ConnectorSerializedData): Device {
+        return new Connector(serialized.numPins)
     }
 }
 
