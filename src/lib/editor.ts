@@ -201,7 +201,7 @@ export function setupEditor(canvasEl: HTMLCanvasElement): Canvas {
     return canvas
 }
 
-export function setupDebugViews(canvas: Canvas, enableQuadtree: boolean, enableRatsnest: boolean) {
+export function setupDebugViews(canvas: Canvas, enableQuadtree: boolean, enableRatsnest: boolean, enableCollisions: boolean) {
     return canvas.on("after:render", function ({ctx}) {
         if (enableQuadtree) {
             const colorNode = 'rgba(255,0,0,0.5)';
@@ -254,6 +254,21 @@ export function setupDebugViews(canvas: Canvas, enableQuadtree: boolean, enableR
                     // ctx.arc(LayoutSvelte.getX(), LayoutSvelte.getY(), 5, 0, 2 * Math.PI);
                 }
                 ctx.stroke() // draw the line
+            }
+            ctx.restore()
+        }
+
+        if(enableCollisions) {
+            ctx.save()
+            ctx.strokeStyle = 'cyan'
+            ctx.lineWidth = 1
+            const elementsThatAreHitting = collisionManager.debugGetCurrentlyHittingComponents()
+            for (let e of elementsThatAreHitting) {
+                // ctx.beginPath()
+                // ctx.arc(e.getX(), e.getY(), 5, 0, 2 * Math.PI)
+                // ctx.stroke()
+                ctx.strokeRect(e.getX() - e.width / 2, e.getY() - e.height / 2, e.width, e.height)
+                ctx.fillText(e.type, e.getX() + 6, e.getY())
             }
             ctx.restore()
         }

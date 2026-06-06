@@ -47,9 +47,10 @@
 
     let enableQuadtree = $state(false)
     let enableRatsnest = $state(false)
+    let enableCollisions = $state(false)
     $effect(() => {
         if (!canvas) return;
-        const debugRenderDisposer = setupDebugViews(canvas, enableQuadtree, enableRatsnest)
+        const debugRenderDisposer = setupDebugViews(canvas, enableQuadtree, enableRatsnest, enableCollisions)
         canvas.requestRenderAll()
         return debugRenderDisposer
     })
@@ -74,6 +75,7 @@
     <li>WASD → move</li>
     <li><label><input type="checkbox" bind:checked={enableQuadtree}>quadtree</label></li>
     <li><label><input type="checkbox" bind:checked={enableRatsnest}>ratsnest</label></li>
+    <li><label><input type="checkbox" bind:checked={enableCollisions}>collisions</label></li>
 </ul>
 
 <div id="tweakpaneControls" bind:this={paramsPane}></div>

@@ -229,6 +229,14 @@ export const collisionManager = {
 
         return components
     },
+
+    debugGetCurrentlyHittingComponents(): Set<FabricObject> {
+        const ret = new Set<any>()
+        for (let [hitter, hittees] of this._lastHitStatuses) {
+            if (hittees.size > 0) ret.add(hitter)
+        }
+        return ret
+    }
 }
 
 declare module "fabric" {
