@@ -215,22 +215,23 @@ export function setupDebugViews(canvas: Canvas, enableQuadtree: boolean, enableR
 
             /* this comes from https://github.com/timohausmann/quadtree-ts/blob/4ab917a58cd7b7c7e7289c4dc0bc3ee2e2c9ee3e/docs/examples/assets/examples.js#L8
             * Copyright (c) 2012-2023 Timo Hausmann */
-            function drawQuadtree(node: Quadtree<any>, ctx: CanvasRenderingContext2D) {
+            function drawQuadtree(node: Quadtree<any>, ctx: CanvasRenderingContext2D, index: number[]) {
                 //no subnodes? draw the current node
                 if (node.nodes.length === 0) {
                     ctx.strokeStyle = colorNode;
                     ctx.strokeRect(node.bounds.x, node.bounds.y, node.bounds.width, node.bounds.height);
+                    ctx.strokeText(index.join(""), node.bounds.x + 2, node.bounds.y + 10 /* default font is 10px */, node.bounds.width);
 
                     //has subnodes? drawQuadtree them!
                 } else {
                     for (let i = 0; i < node.nodes.length; i = i + 1) {
-                        drawQuadtree(node.nodes[i], ctx);
+                        drawQuadtree(node.nodes[i], ctx, [...index, i]);
                     }
                 }
             }
 
             ctx.save()
-            drawQuadtree(collisionManager._quadtree, ctx)
+            drawQuadtree(collisionManager._quadtree, ctx, [])
             ctx.restore()
         }
 

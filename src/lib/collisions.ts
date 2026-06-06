@@ -113,6 +113,7 @@ export const collisionManager = {
     _fabricToQTMap: new Map<FabricObject, QTShapes<FabricObject>>(),
     _quadtree: new Quadtree<QTShapes<FabricObject>>({
         width: 1600, height: 750,
+        maxObjects: 30,
         // maxLevels: 0
     }),
 
