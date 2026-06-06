@@ -127,12 +127,19 @@ export const collisionManager = {
         function updatePositionInQuadtree() {
             quadtreeEntity.x = elem.getBoundingRect().left
             quadtreeEntity.y = elem.getBoundingRect().top
-            // no need to change width and height, we never allow any elements to be change size
+            if ("width" in quadtreeEntity) {
+                // NOTE: Even though we never allow any elements to be directly resized,
+                // rotating a rectangle does change its W&H
+                // circles don't have the width&height properties, but it's OK since they don't change under rotation
+                quadtreeEntity.width = elem.getBoundingRect().width
+                quadtreeEntity.height = elem.getBoundingRect().height
+            }
             that._quadtree.update(quadtreeEntity)
             that.findHits(elem)
         }
 
         elem.on("moving", updatePositionInQuadtree)
+        elem.on("rotating", updatePositionInQuadtree)
         elem.on("added", updatePositionInQuadtree) // e.g. when added to group, then the coords will change
 
         elem.once("removed", function () {

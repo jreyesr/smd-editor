@@ -141,6 +141,7 @@ export function setupEditor(canvasEl: HTMLCanvasElement): Canvas {
                 break
             case "r":
             case "R":
+                // target.set("angle", target.angle + deltaAngle)
                 target.animate({
                     angle: target.angle + deltaAngle
                 }, {
@@ -155,6 +156,7 @@ export function setupEditor(canvasEl: HTMLCanvasElement): Canvas {
                     },
                     onComplete: () => {
                         target.fire("moving")
+                        target.fire("rotating")
                     }
                 })
                 break
@@ -236,16 +238,17 @@ export function setupDebugViews(canvas: Canvas, enableQuadtree: boolean, enableR
         }
 
         if (enableRatsnest) {
-            const colorRatsnestLines = 'magenta';
+            const colorsRatsnestLines = ['magenta', 'limegreen', 'yellow', 'navyblue', 'olive', 'teal', 'purple', 'cornsilk', 'darksalmon'];
 
             ctx.save()
-            ctx.strokeStyle = colorRatsnestLines
             ctx.setLineDash([4, 4])
             ctx.lineWidth = 3
 
             const connectedComponents = collisionManager.getConnectedSets()
+            let i = 0;
             for (let net of connectedComponents) {
                 let isFirst = true
+                ctx.beginPath()
                 for (let component of net) {
                     if (component.type.endsWith("/pad") || component.type === "path") {
                         // don't count board pads or solder lines on the ratsnest, only actual LayoutSvelte pads/pins
@@ -256,6 +259,7 @@ export function setupDebugViews(canvas: Canvas, enableQuadtree: boolean, enableR
                         ctx.moveTo(component.getX(), component.getY())
                         isFirst = false
                     } else {
+                        ctx.strokeStyle = colorsRatsnestLines[i++ % colorsRatsnestLines.length]
                         // add another point to the line
                         ctx.lineTo(component.getX(), component.getY())
                     }
@@ -272,11 +276,13 @@ export function setupDebugViews(canvas: Canvas, enableQuadtree: boolean, enableR
             ctx.lineWidth = 1
             const elementsThatAreHitting = collisionManager.debugGetCurrentlyHittingComponents()
             for (let e of elementsThatAreHitting) {
-                // ctx.beginPath()
-                // ctx.arc(e.getX(), e.getY(), 5, 0, 2 * Math.PI)
-                // ctx.stroke()
-                ctx.strokeRect(e.getX() - e.width / 2, e.getY() - e.height / 2, e.width, e.height)
-                ctx.fillText(e.type, e.getX() + 6, e.getY())
+                ctx.strokeRect(
+                    e.getX() - e.getBoundingRect().width / 2, e.getY() - e.getBoundingRect().height / 2,
+                    e.getBoundingRect().width, e.getBoundingRect().height)
+            }
+            // draw the texts later so they appear on top of the outlines
+            for (let e of elementsThatAreHitting) {
+                ctx.fillText(e.type, e.getX(), e.getY())
             }
             ctx.restore()
         }

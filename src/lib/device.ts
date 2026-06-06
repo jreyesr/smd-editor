@@ -58,6 +58,7 @@ export type SerializedDevice = {
 export abstract class Device extends Group {
     private movingDisposer?: VoidFunction;
     private removedDisposer?: VoidFunction;
+    private rotatingDisposer?: VoidFunction;
 
     protected setElements() {
         for (let pin of this.pins) {
@@ -74,6 +75,11 @@ export abstract class Device extends Group {
         this.movingDisposer?.()
         this.movingDisposer = this.on("moving", function (this: Device, ev) {
             this.pins.forEach(p => p.fire("moving", ev))
+        })
+
+        this.rotatingDisposer?.()
+        this.rotatingDisposer = this.on("rotating", function (this: Device, ev) {
+            this.pins.forEach(p => p.fire("rotating", ev))
         })
 
         this.removedDisposer?.()
