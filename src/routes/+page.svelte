@@ -45,8 +45,8 @@
 
     .design-card {
         background-color: lightcyan;
-        flex-basis: 32%;
-        max-width: 32%;
+        flex-basis: 31%;
+        max-width: 31%;
         padding: 2em;
         text-align: center;
         align-content: center;
@@ -57,6 +57,14 @@
             width: 100%;
         }
     }
+
+    @media (max-width: 768px) {
+        .design-card {
+            flex-basis: 100%;
+            max-width: 100%;
+        }
+    }
+
 
     .new-design {
         border: 2px dashed gray;
