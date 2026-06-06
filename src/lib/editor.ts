@@ -1,6 +1,6 @@
 import {
     ActiveSelection,
-    Canvas,
+    Canvas, type CanvasEvents,
     classRegistry,
     controlsUtils,
     FabricText,
@@ -258,7 +258,7 @@ export function setupDebugViews(canvas: Canvas, enableQuadtree: boolean, enableR
             ctx.restore()
         }
 
-        if(enableCollisions) {
+        if (enableCollisions) {
             ctx.save()
             ctx.strokeStyle = 'cyan'
             ctx.lineWidth = 1
@@ -273,4 +273,10 @@ export function setupDebugViews(canvas: Canvas, enableQuadtree: boolean, enableR
             ctx.restore()
         }
     })
+}
+
+export function hookChangeNotifier(canvas: Canvas, onChange: () => void) {
+    const interestingEvents: (keyof CanvasEvents)[] = ["object:added", "object:moving", "object:rotating", "object:removed", "object:modified", "path:created"]
+    const discarders = interestingEvents.map(evName => canvas.on(evName, () => onChange()))
+    return () => discarders.forEach(discarder => discarder())
 }

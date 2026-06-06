@@ -1,13 +1,19 @@
 <script lang="ts">
     import type {PageProps} from './$types';
     import {
-        getDataToSave, initializeEmptyDesign, loadDataIntoCanvas, setupDebugViews, setupEditor,
+        getDataToSave,
+        hookChangeNotifier,
+        initializeEmptyDesign,
+        loadDataIntoCanvas,
+        setupDebugViews,
+        setupEditor,
         takeCanvasScreenshot
     } from "$lib/editor";
     import {type Canvas} from "fabric";
     import ContextMenu from './contextMenu.svelte';
     import {components} from "$lib/device";
     import {saveDesign, updateDesignName} from "$lib/store";
+    import {beforeNavigate} from "$app/navigation";
 
     let {data}: PageProps = $props();
     let name = $state(data.name);
@@ -15,6 +21,7 @@
     let canvasEl: HTMLCanvasElement;
     let paramsPane: HTMLElement;
     let canvas: Canvas | null = $state(null)
+    let isDirty = $state(false)
     $effect(() => {
         if (!canvas) { // don't double-initialize the canvas
             canvas = setupEditor(canvasEl)
@@ -27,12 +34,27 @@
         } else {
             loadDataIntoCanvas(canvas, data.data, paramsPane)
         }
+        // only hook this once loaded, otherwise the act of loading/init'ing the canvas already marks it as dirty
+        return hookChangeNotifier(canvas, () => {
+            isDirty = true
+        })
     })
 
-    function saveCurrentDesign() {
+    beforeNavigate((navigation) => {
+        if (isDirty) {
+            if (navigation.type == "leave") {
+                navigation.cancel()
+            } else {
+                saveCurrentDesign()
+            }
+        }
+    })
+
+    async function saveCurrentDesign() {
         const dataToSave = getDataToSave(canvas!)
         const screenshot = takeCanvasScreenshot(canvas!)
-        saveDesign(data.id.toString(), dataToSave, screenshot)
+        await saveDesign(data.id.toString(), dataToSave, screenshot)
+        isDirty = false
     }
 
     function updateName(ev: FocusEvent) {
@@ -56,15 +78,15 @@
     })
 </script>
 
-<div class="persistence-warning">
+<!--<div class="persistence-warning">
     <p><b>WARNING!</b></p>
     <p>Don't do too much work on this editor! It doesn't currently have any way of saving and restoring data, so
         anything you do here will be lost on page refresh. You've been warned.</p>
-</div>
+</div>-->
 
 <h1>
     <input id="name" value={name} onblur={updateName} onkeydown={updateNameFromKey}/>
-    <button onclick={saveCurrentDesign}>Save</button>
+    <button id="save" onclick={saveCurrentDesign} disabled={!isDirty}>Save</button>
 </h1>
 
 <ul class="instructions">
@@ -98,6 +120,17 @@
 
     #editor {
         border: 1px solid lightgray;
+    }
+
+    #save {
+        padding: 0.5em 1em;
+        font-size: medium;
+
+        &:not(:disabled) {
+            background-color: aquamarine;
+            border: 3px solid mediumaquamarine;
+            border-radius: 5px;
+        }
     }
 
     input#name {
