@@ -144,7 +144,7 @@ export const collisionManager = {
         if (!quadtreeEntity) return
         this._quadtree.remove(quadtreeEntity)
 
-        // inform everyone that was being hit by the delete object
+        // inform everyone that was being hit by the deleted object
         const wasHitting = this._lastHitStatuses.get(elem) ?? new Set()
         for (let hitter of wasHitting) {
             this._lastHitStatuses.get(hitter)?.delete(elem)
@@ -154,6 +154,9 @@ export const collisionManager = {
             })
             hitter.fire("collision:update", {nowHitting: this._lastHitStatuses.get(hitter) ?? new Set()})
         }
+
+        this._lastHitStatuses.delete(elem)
+        this._fabricToQTMap.delete(elem)
     },
 
     findHits(elem: FabricObject) {
@@ -170,25 +173,23 @@ export const collisionManager = {
         const newHits = currentHits.difference(prevHits)
         for (let hitter of newHits) {
             elem.fire("collision:on", {other: hitter, nowHitting: currentHits})
-            if (!this._lastHitStatuses.has(hitter)) this._lastHitStatuses.set(hitter, new Set())
-            this._lastHitStatuses.get(hitter)!.add(elem)
+            this._lastHitStatuses.getOrInsert(hitter, new Set()).add(elem)
             hitter.fire("collision:on", {
                 other: elem,
-                nowHitting: this._lastHitStatuses.get(hitter) ?? new Set<FabricObject>()
+                nowHitting: this._lastHitStatuses.get(hitter)!
             })
-            hitter.fire("collision:update", {nowHitting: this._lastHitStatuses.get(hitter) ?? new Set()})
+            hitter.fire("collision:update", {nowHitting: this._lastHitStatuses.get(hitter)!})
         }
 
         const noLongerHits = prevHits.difference(currentHits)
         for (let formerHitter of noLongerHits) {
             elem.fire("collision:off", {other: formerHitter, nowHitting: currentHits})
-            if (!this._lastHitStatuses.has(formerHitter)) this._lastHitStatuses.set(formerHitter, new Set())
-            this._lastHitStatuses.get(formerHitter)!.delete(elem)
+            this._lastHitStatuses.getOrInsert(formerHitter, new Set()).delete(elem)
             formerHitter.fire("collision:off", {
                 other: elem,
-                nowHitting: this._lastHitStatuses.get(formerHitter) ?? new Set<FabricObject>()
+                nowHitting: this._lastHitStatuses.get(formerHitter)!
             })
-            formerHitter.fire("collision:update", {nowHitting: this._lastHitStatuses.get(formerHitter) ?? new Set()})
+            formerHitter.fire("collision:update", {nowHitting: this._lastHitStatuses.get(formerHitter)!})
         }
 
         return hits

@@ -182,8 +182,15 @@ export function setupEditor(canvasEl: HTMLCanvasElement): Canvas {
 
         // trigger a redraw because we likely changed some graphics
         canvas.requestRenderAll()
-        target.setCoords()
-        target.fire("moving") // because most actions will move the targeted object
+
+        if (target.canvas) {
+            // of target is off-canvas, then it was just deleted and shouldn't have its pos updated
+            // because that would re-add it to the collmgr forever, in its last position
+            // if it _does_ have a canvas, emit a moving event because most actions will move the targeted object,
+            // and anyways that's what the collmgr uses as the signal to recompute colls by/with the element
+            target.setCoords()
+            target.fire("moving")
+        }
     })
 
     canvas.on("object:moving", function (ev) {
