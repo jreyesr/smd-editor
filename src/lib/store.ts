@@ -67,3 +67,8 @@ export async function updateDesignName(id: string, newName: string) {
 
     await db.put("designs", {...currentVersion, name: newName, id: parseInt(id)})
 }
+
+export async function deleteDesign(id: string) {
+    const db = await getDB()
+    return await db.delete("designs", parseInt(id))
+}
