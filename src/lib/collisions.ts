@@ -50,6 +50,9 @@ function collides(a: QTShapes<unknown>, b: QTShapes<unknown>) {
         case a instanceof QTCircle && b instanceof QTCircle:
             // dist between centers = sqrt(Δx^2 + Δy^2) <= r1+r2
             return Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2) <= Math.pow(a.r + b.r, 2)
+        case a instanceof QTBezier && b instanceof QTBezier:
+            // curve-to-curve check, MUST BE above the curve-to-rect check because QTBezier is a subclass of QTRectangle
+            return a.intersectsBezier(b)
         case (a instanceof QTBezier && b instanceof QTRectangle) || (b instanceof QTBezier && a instanceof QTRectangle):
             // curve-to-rect coll check (e.g solderline to rectangular SMD board pad or to rectangular device pin)
             const rect = (a instanceof QTBezier ? b : a) as QTRectangle<FabricObject>
@@ -93,7 +96,7 @@ class QTBezier extends QTRectangle<Path> {
     }
 
     intersectsCircle(circle: QTCircle<unknown>) {
-        const bezierOff = this.data!.pathOffset!
+        const bezierOff = this.data!.pathOffset
         const pointHitsCircle = ({x, y}: { x: number, y: number }) => {
             const pointRealX = x - bezierOff.x + this.x + this.width / 2
             const pointRealY = y - bezierOff.y + this.y + this.height / 2
@@ -103,6 +106,21 @@ class QTBezier extends QTRectangle<Path> {
             return Math.pow(circle.x - pointRealX, 2) + Math.pow(circle.y - pointRealY, 2) <= Math.pow(this.pathRadius + circle.r, 2)
         }
         return util.getPathSegmentsInfo(this.data!.path).some(pointHitsCircle)
+    }
+
+    intersectsBezier(bezier: QTBezier) {
+        const bezierOff = this.data!.pathOffset
+        const pointHitsPath = (otherPath: QTBezier) => ({x, y}: { x: number, y: number }) => {
+            const otherBezierOff = otherPath.data!.pathOffset
+            return util.getPathSegmentsInfo(otherPath.data!.path).some(({x: xOther, y: yOther}) => {
+                const pointRealX = x - bezierOff.x + this.x + this.width / 2
+                const otherPointRealX = xOther - otherBezierOff.x + otherPath.x + otherPath.width / 2
+                const pointRealY = y - bezierOff.y + this.y + this.height / 2
+                const otherPointRealY = yOther - otherBezierOff.y + otherPath.y + otherPath.height / 2
+                return Math.pow(otherPointRealX - pointRealX, 2) + Math.pow(otherPointRealY - pointRealY, 2) <= Math.pow(this.pathRadius + otherPath.pathRadius, 2)
+            })
+        }
+        return util.getPathSegmentsInfo(this.data!.path).some(pointHitsPath(bezier))
     }
 }
 

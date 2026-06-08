@@ -238,7 +238,7 @@ export function setupDebugViews(canvas: Canvas, enableQuadtree: boolean, enableR
         }
 
         if (enableRatsnest) {
-            const colorsRatsnestLines = ['magenta', 'limegreen', 'yellow', 'navyblue', 'olive', 'teal', 'purple', 'cornsilk', 'darksalmon'];
+            const colorsRatsnestLines = ['magenta', 'limegreen', 'yellow', 'navy', 'olive', 'teal', 'purple', 'cornsilk', 'darksalmon'];
 
             ctx.save()
             ctx.setLineDash([4, 4])
@@ -247,7 +247,9 @@ export function setupDebugViews(canvas: Canvas, enableQuadtree: boolean, enableR
             const connectedComponents = collisionManager.getConnectedSets()
             let i = 0;
             for (let net of connectedComponents) {
-                let isFirst = true
+                if (net.size < 2) continue;
+                let isFirst = true, colorSet = false
+
                 ctx.beginPath()
                 for (let component of net) {
                     if (component.type.endsWith("/pad") || component.type === "path") {
@@ -259,7 +261,10 @@ export function setupDebugViews(canvas: Canvas, enableQuadtree: boolean, enableR
                         ctx.moveTo(component.getX(), component.getY())
                         isFirst = false
                     } else {
-                        ctx.strokeStyle = colorsRatsnestLines[i++ % colorsRatsnestLines.length]
+                        if (!colorSet) {
+                            ctx.strokeStyle = colorsRatsnestLines[i++ % colorsRatsnestLines.length]
+                            colorSet = true
+                        }
                         // add another point to the line
                         ctx.lineTo(component.getX(), component.getY())
                     }
