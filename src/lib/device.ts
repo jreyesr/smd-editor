@@ -7,6 +7,7 @@ const PIXELS_PER_MM = 40;
 export const mm = PIXELS_PER_MM;
 export const inch = PIXELS_PER_MM * 25.4;
 export const mil = inch / 1000;
+const almostWhite = "rgba(255, 255, 255, .8)"
 
 export type ContextMenuEntry = {
     displayName: string,
@@ -124,7 +125,7 @@ export class SHT40 extends Device {
     constructor(props?: Partial<FabricObjectProps>) {
         super(
             [
-                new Rect({width: 1.5 * mm, height: 1.5 * mm, stroke: "black", strokeWidth: 1, fill: "white"}),
+                new Rect({width: 1.5 * mm, height: 1.5 * mm, stroke: "black", strokeWidth: 1, fill: almostWhite}),
                 new Circle({radius: .3 * mm, stroke: "black", fill: "transparent"}),
                 new FabricText("SH40", {
                     top: -.5 * mm, left: 0, fontSize: 13
@@ -198,7 +199,7 @@ export class Passive extends Device {
         })
         super(
             [
-                new Rect({width: bodyWidth, height: bodyHeight, stroke: "black", strokeWidth: 1, fill: "white"}),
+                new Rect({width: bodyWidth, height: bodyHeight, stroke: "black", strokeWidth: 1, fill: almostWhite}),
                 label,
             ],
             [
@@ -309,7 +310,7 @@ export class SOIC extends Device {
         const label = new FabricText(tag, {
             left: 0, top: 0, height: bodyHeight
         })
-        const outline = new Rect({width: 3.91 * mm, height: bodyHeight, stroke: "black", strokeWidth: 1, fill: "white"})
+        const outline = new Rect({width: 3.91 * mm, height: bodyHeight, stroke: "black", strokeWidth: 1, fill: almostWhite})
         const pin1Marker = new Circle({
             radius: .3 * mm,
             left: -1.2 * mm, // center offset .75mm from edge
@@ -474,7 +475,7 @@ export class DIP extends Device {
             left: 0, top: 0, height: bodyHeight
         })
         // width = E1
-        const outline = new Rect({width: 250 * mil, height: bodyHeight, stroke: "black", strokeWidth: 1, fill: "white"})
+        const outline = new Rect({width: 250 * mil, height: bodyHeight, stroke: "black", strokeWidth: 1, fill: almostWhite})
         const pin1Marker = new Circle({
             radius: .3 * mm,
             left: -250 * mil / 2 + .75 * mm, // center offset .75mm from edge
@@ -630,7 +631,7 @@ export class SOT23 extends Device {
         super(
             [
                 // width = E1
-                new Rect({width: 1.63 * mm, height: 2.95 * mm, stroke: "black", strokeWidth: 1, fill: "white"}),
+                new Rect({width: 1.63 * mm, height: 2.95 * mm, stroke: "black", strokeWidth: 1, fill: almostWhite}),
                 label,
                 new Circle({
                     radius: .12 * mm,
@@ -781,7 +782,7 @@ export class Connector extends Device {
             the rectangle's center + is CW/2 to left of right edge A, so distance * to + is CW/2
             */
             left: Connector.padWidth / 2, top: 0,
-            fill: "white", stroke: "black", strokeWidth: 1
+            fill: almostWhite, stroke: "black", strokeWidth: 1
         })
         super([
             outline
