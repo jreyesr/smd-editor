@@ -2,18 +2,16 @@ import {Circle, classRegistry, FabricObject, type FabricObjectProps, FabricText,
 import {collisionManager} from "./collisions";
 import {ListBladeApi, Pane, TextBladeApi} from "tweakpane";
 import {ButtonGridApi} from "@tweakpane/plugin-essentials";
+import {type ContextMenuEntry} from "../routes/editor/[id]/contextMenu.svelte";
 
 const PIXELS_PER_MM = 40;
 export const mm = PIXELS_PER_MM;
 export const inch = PIXELS_PER_MM * 25.4;
 export const mil = inch / 1000;
-const almostWhite = "rgba(255, 255, 255, .8)"
-
-export type ContextMenuEntry = {
-    displayName: string,
-    constructor: new (...args: any[]) => Device,
-    params?: any[]
+const sharedOutlineProps: Pick<FabricObjectProps, 'fill' | 'stroke' | 'strokeWidth'> = {
+    stroke: "black", strokeWidth: 1, fill: "rgba(255, 255, 255, .9)"
 }
+
 export const components: ContextMenuEntry[] = []
 
 class RectangularPad extends Rect {
@@ -125,8 +123,8 @@ export class SHT40 extends Device {
     constructor(props?: Partial<FabricObjectProps>) {
         super(
             [
-                new Rect({width: 1.5 * mm, height: 1.5 * mm, stroke: "black", strokeWidth: 1, fill: almostWhite}),
-                new Circle({radius: .3 * mm, stroke: "black", fill: "transparent"}),
+                new Rect({width: 1.5 * mm, height: 1.5 * mm, ...sharedOutlineProps}),
+                new Circle({radius: .3 * mm, ...sharedOutlineProps, fill: "transparent"}),
                 new FabricText("SH40", {
                     top: -.5 * mm, left: 0, fontSize: 13
                 })
@@ -199,7 +197,7 @@ export class Passive extends Device {
         })
         super(
             [
-                new Rect({width: bodyWidth, height: bodyHeight, stroke: "black", strokeWidth: 1, fill: almostWhite}),
+                new Rect({width: bodyWidth, height: bodyHeight, ...sharedOutlineProps}),
                 label,
             ],
             [
@@ -310,13 +308,12 @@ export class SOIC extends Device {
         const label = new FabricText(tag, {
             left: 0, top: 0, height: bodyHeight
         })
-        const outline = new Rect({width: 3.91 * mm, height: bodyHeight, stroke: "black", strokeWidth: 1, fill: almostWhite})
+        const outline = new Rect({width: 3.91 * mm, height: bodyHeight, ...sharedOutlineProps})
         const pin1Marker = new Circle({
             radius: .3 * mm,
             left: -1.2 * mm, // center offset .75mm from edge
             top: -bodyHeight / 2 + .75 * mm,
-            stroke: "black",
-            strokeWidth: 1,
+            ...sharedOutlineProps,
             fill: "white"
         })
         super(
@@ -475,13 +472,12 @@ export class DIP extends Device {
             left: 0, top: 0, height: bodyHeight
         })
         // width = E1
-        const outline = new Rect({width: 250 * mil, height: bodyHeight, stroke: "black", strokeWidth: 1, fill: almostWhite})
+        const outline = new Rect({width: 250 * mil, height: bodyHeight, ...sharedOutlineProps,})
         const pin1Marker = new Circle({
             radius: .3 * mm,
             left: -250 * mil / 2 + .75 * mm, // center offset .75mm from edge
             top: -bodyHeight / 2 + .75 * mm,
-            stroke: "black",
-            strokeWidth: 1,
+            ...sharedOutlineProps,
             fill: "white"
         })
         super(
@@ -631,14 +627,13 @@ export class SOT23 extends Device {
         super(
             [
                 // width = E1
-                new Rect({width: 1.63 * mm, height: 2.95 * mm, stroke: "black", strokeWidth: 1, fill: almostWhite}),
+                new Rect({width: 1.63 * mm, height: 2.95 * mm, ...sharedOutlineProps}),
                 label,
                 new Circle({
                     radius: .12 * mm,
                     left: -1.63 * mm / 2 + .4 * mm, // center offset .. from edge
                     top: -2.95 * mm / 2 + .4 * mm,
-                    stroke: "black",
-                    strokeWidth: 1,
+                    ...sharedOutlineProps,
                     fill: "black"
                 })
             ],
@@ -729,28 +724,33 @@ classRegistry.setClass(SOT23)
 
 type ConnectorSerializedData = {
     numPins: number
+    pinPitch: number
 }
 
 export class Connector extends Device {
     static {
         components.push(
             {
-                displayName: "4-pin connector",
+                displayName: "4-pin connector, 100-mil",
                 constructor: Connector,
-                params: [4]
+                params: [4, 100 * mil]
+            },
+            {
+                displayName: "3-pin connector, 50-mil",
+                constructor: Connector,
+                params: [3, 50 * mil]
             },
         )
     }
-    static type = "Device/Connector/100mil"
-    private static padWidth = 60 * mil
-    private static connectorWidth = 100 * mil;
+    static type = "Device/Connector"
 
-    static makePins(numPins: number) {
+    static makePins(numPins: number, pinPitch: number, padWidth: number) {
+        const connectorWidth = pinPitch, padHeight = padWidth * .55;
         const pins: RectangularPad[] = []
-        const yOffset = 100 * mil * (numPins - 1) / 2; // e.g. a 4-pin connector is offset 1.5
+        const yOffset = pinPitch * (numPins - 1) / 2; // e.g. a 4-pin connector is offset 1.5
         for (let i = 0; i < numPins; i++) {
             pins.push(new RectangularPad(
-                Connector.padWidth, 35 * mil,
+                padWidth, padHeight,
                 /*
                 └─────┴────────────┘
                   PW         CW
@@ -761,17 +761,20 @@ export class Connector extends Device {
                 so the distance from + to * is (PW+CW)/2 - PW/2 = PW/2+CW/2 - PW/2 = CW/2
                 then also negative because distance here must be from * to +, inverted
                 */
-                -Connector.connectorWidth / 2, 100 * mil * i - yOffset))
+                -connectorWidth / 2, pinPitch * i - yOffset))
         }
         return pins
     }
 
     #outline: Rect
+    private padWidth: number
 
-    constructor(private numPins: number, props?: Partial<FabricObjectProps>) {
-        const pins = Connector.makePins(numPins)
+    constructor(private numPins: number, private pinPitch: number, props?: Partial<FabricObjectProps>) {
+        const padWidth = pinPitch * .6
+        const pins = Connector.makePins(numPins, pinPitch, padWidth)
+        const connectorWidth = pinPitch;
         const outline = new Rect({
-            width: Connector.connectorWidth, height: 100 * mil * numPins,
+            width: connectorWidth, height: pinPitch * numPins,
             /*
             └───┴──────────┘
              PW      CW
@@ -779,16 +782,27 @@ export class Connector extends Device {
                       (CW/2)
             └───┴──*──+────┘(A)
                    (PW+CW)/2
-            the rectangle's center + is CW/2 to left of right edge A, so distance * to + is CW/2
+            the rectangle's center + is CW/2 to left of right edge A, so distance * to + is PW/2
             */
-            left: Connector.padWidth / 2, top: 0,
-            fill: almostWhite, stroke: "black", strokeWidth: 1
+            left: padWidth / 2, top: 0,
+            ...sharedOutlineProps,
         })
         super([
             outline
         ], pins, props)
 
         this.#outline = outline
+        this.padWidth = padWidth
+    }
+
+    redraw() {
+        this.padWidth = this.pinPitch * .6
+        this.pins = Connector.makePins(this.numPins, this.pinPitch, this.padWidth)
+        this.#outline.left = this.padWidth / 2
+        this.#outline.width = this.pinPitch
+        this.#outline.height = this.pinPitch * this.numPins
+        this.setElements()
+        this.canvas?.requestRenderAll()
     }
 
     override setupParametersPane(pane: Pane) {
@@ -796,22 +810,31 @@ export class Connector extends Device {
         pane.addBinding(this, "numPins", {
             min: 2, max: 40, step: 1,
         }).on("change", (ev) => {
-            this.pins = Connector.makePins(this.numPins)
-            this.#outline.height = 100 * mil * this.numPins
-            this.setElements()
-            this.canvas?.requestRenderAll()
+            this.redraw()
         });
+
+        // @ts-expect-error doesn't recognize "pinPitch" as keyof this
+        pane.addBinding(this, "pinPitch", {
+            min: 50, max: 100, step: 50
+        }).on("change", () => {
+            this.redraw()
+        })
     }
 
     override save(): ConnectorSerializedData {
         return {
             numPins: this.numPins,
+            pinPitch: this.pinPitch
         };
     }
 
     static override load(serialized: ConnectorSerializedData): Device {
-        return new Connector(serialized.numPins)
+        return new Connector(
+            serialized.numPins,
+            serialized.pinPitch ?? 100 * mil,
+        )
     }
 }
 
 classRegistry.setClass(Connector)
+classRegistry.setClass(Connector, "device/connector/100mil") // alias

@@ -6,4 +6,3 @@ export const load: PageLoad = async ({params}) => {
         designs: await listDesigns()
     }
 }
-export const ssr = false

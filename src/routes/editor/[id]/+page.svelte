@@ -14,6 +14,7 @@
     import {components} from "$lib/device";
     import {saveDesign, updateDesignName} from "$lib/store";
     import {beforeNavigate} from "$app/navigation";
+    import {onMount} from "svelte";
 
     let {data}: PageProps = $props();
     let name = $state(data.name);
@@ -22,7 +23,7 @@
     let paramsPane: HTMLElement;
     let canvas: Canvas | null = $state(null)
     let isDirty = $state(false)
-    $effect(() => {
+    onMount(() => {
         if (!canvas) { // don't double-initialize the canvas
             canvas = setupEditor(canvasEl)
         }
@@ -106,11 +107,11 @@
 <canvas id="editor" bind:this={canvasEl}></canvas>
 
 <style>
-    .persistence-warning {
-        background-color: orange;
-        padding: 1em;
-        margin: 1em;
-    }
+    /*.persistence-warning {*/
+    /*    background-color: orange;*/
+    /*    padding: 1em;*/
+    /*    margin: 1em;*/
+    /*}*/
 
     #tweakpaneControls {
         position: absolute;
