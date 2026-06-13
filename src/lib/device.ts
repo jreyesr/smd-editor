@@ -2,7 +2,7 @@ import {Circle, classRegistry, FabricObject, type FabricObjectProps, FabricText,
 import {collisionManager} from "./collisions";
 import {ListBladeApi, Pane, TextBladeApi} from "tweakpane";
 import {ButtonGridApi} from "@tweakpane/plugin-essentials";
-import {type ContextMenuEntry} from "../routes/editor/[id]/contextMenu.svelte";
+import {type ContextMenuEntry} from "../routes/editor/[id]/contextMenu";
 
 const PIXELS_PER_MM = 40;
 export const mm = PIXELS_PER_MM;

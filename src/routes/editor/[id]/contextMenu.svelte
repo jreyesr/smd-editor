@@ -1,16 +1,7 @@
-<script module lang="ts">
-    import {Device} from "$lib/device";
-
-    export type ContextMenuEntry = {
-        displayName: string,
-        constructor: new (...args: any[]) => Device,
-        params?: any[]
-    }
-</script>
-
 <script lang="ts">
     import {Canvas, Path} from "fabric";
     import {addDeviceToCanvas, onSolderAdded} from "$lib/editor";
+    import type {ContextMenuEntry} from "./contextMenu";
 
     let popoverEl: HTMLElement;
 
