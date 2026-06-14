@@ -2,7 +2,7 @@ import {
     ActiveSelection,
     Canvas, type CanvasEvents,
     classRegistry,
-    controlsUtils,
+    controlsUtils, type FabricObject,
     FabricText,
     InteractiveFabricObject,
     Path,
@@ -238,39 +238,41 @@ export function setupDebugViews(canvas: Canvas, enableQuadtree: boolean, enableR
         }
 
         if (enableRatsnest) {
-            const colorsRatsnestLines = ['magenta', 'limegreen', 'yellow', 'navy', 'olive', 'teal', 'purple', 'cornsilk', 'darksalmon'];
+            const colorsRatsnestLines = ['magenta', 'limegreen', 'yellow', 'navy', 'hotpink', 'firebrick', 'purple', 'cornsilk', 'darksalmon'];
 
             ctx.save()
             ctx.setLineDash([4, 4])
             ctx.lineWidth = 3
 
-            const connectedComponents = collisionManager.getConnectedSets()
-            let i = 0;
-            for (let net of connectedComponents) {
-                if (net.size < 2) continue;
-                let isFirst = true, colorSet = false
+            const shouldDraw = (component: FabricObject) => !(component.type.endsWith("/pad") || component.type === "path");
+            const trees = collisionManager.getConnectedTrees(shouldDraw)
 
+            function dot(ctx: CanvasRenderingContext2D, elem: FabricObject, radius: number = 4) {
                 ctx.beginPath()
-                for (let component of net) {
-                    if (component.type.endsWith("/pad") || component.type === "path") {
-                        // don't count board pads or solder lines on the ratsnest, only actual LayoutSvelte pads/pins
-                        continue
-                    }
+                ctx.arc(elem.getX(), elem.getY(), radius, 0, 2 * Math.PI)
+                ctx.fill()
+            }
 
-                    if (isFirst) {  // only happens on the first loop
-                        ctx.moveTo(component.getX(), component.getY())
-                        isFirst = false
-                    } else {
-                        if (!colorSet) {
-                            ctx.strokeStyle = colorsRatsnestLines[i++ % colorsRatsnestLines.length]
-                            colorSet = true
-                        }
-                        // add another point to the line
-                        ctx.lineTo(component.getX(), component.getY())
-                    }
-                    // ctx.arc(LayoutSvelte.getX(), LayoutSvelte.getY(), 5, 0, 2 * Math.PI);
+            function drawTreeSingleLevel(parent: FabricObject, children: Set<FabricObject>) {
+                // draws only one level of the tree = the lines between a parent and all its immediate children
+                // also draws a dot on the parent and the children
+                dot(ctx, parent)
+                for (let child of children) {
+                    dot(ctx, child)
+                    ctx.beginPath()
+                    ctx.moveTo(parent.getX(), parent.getY())
+                    ctx.lineTo(child.getX(), child.getY())
+                    ctx.stroke()
                 }
-                ctx.stroke() // draw the line
+            }
+
+            let i = 0; // for the rolling colors
+            for (let tree of trees) {
+                if (tree.size === 0) continue;
+
+                ctx.strokeStyle = colorsRatsnestLines[i++ % colorsRatsnestLines.length] // swap the color for each net
+                ctx.fillStyle = ctx.strokeStyle
+                tree.forEach((children, parent) => drawTreeSingleLevel(parent, children))
             }
             ctx.restore()
         }

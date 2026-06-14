@@ -228,8 +228,13 @@ export const collisionManager = {
      * E.g. if pin A collides with board pad 1,2 and solder line X collides with board pads 1,2
      * and 1,3 and pin A of another device collides with board pad 1,3, then all of them are part of the same connected
      * component (pin A->pad 1,2->solder line->pad 1,2->pin A')
+     *
+     * @param includeFunction If provided, then only objects for which this returns True will be included in the connected sets.
+     * Ignored objects will still be used for transitive collisions (e.g. if A hits B and B hits C, and B is ignored, then the
+     * returned set will be (A, C), because A and C do hit each other, albeit through B. Use e.g. to exclude wires and
+     * connecting elements in the connected sets, and leave only the endpoints (device pads and pins)
      */
-    getConnectedSets(): Set<Set<FabricObject>> {
+    getConnectedSets(includeFunction?: (x: FabricObject) => boolean): Set<Set<FabricObject>> {
         const dfs = (elem: FabricObject, alreadyKnown: Set<FabricObject>) => {
             const adjacent = this._lastHitStatuses.get(elem)
             if (adjacent === undefined) return // elem doesn't connect to anything
@@ -251,10 +256,68 @@ export const collisionManager = {
             dfs(seedElem, singleComponent) // will alter connectedElems
             alreadyCovered = alreadyCovered.union(singleComponent) // e.g. if {A, B}, then there's no need to then start from seed B
 
-            components.add(singleComponent)
+            if (includeFunction) {
+                components.add(new Set(singleComponent.values().filter(includeFunction)))
+            } else {
+                components.add(singleComponent)
+            }
         }
 
         return components
+    },
+
+    /**
+     * Given the latest collision statuses (A collides with B and D, B collides with A, ...),
+     * computes the connected sets as in getConnectedSets, and also
+     *
+     * @param includeFunction See the includeFunction param in {@link getConnectedSets}, it has the same meaning here.
+     * Objects that are discarded by this function won't be included in the returned trees, but will be used to compute
+     */
+    getConnectedTrees(includeFunction?: (x: FabricObject) => boolean): Set<Map<FabricObject, Set<FabricObject>>> {
+        const msts = new Set<Map<FabricObject, Set<FabricObject>>>()
+        for (let s of this.getConnectedSets(includeFunction)) {
+            const visited = new Set<FabricObject>() // set of vertices that already belong to the tree
+            const minDist = new Map<FabricObject, number>() // min dist from each vertex to the already-known tree
+            const parents = new Map<FabricObject, FabricObject>() // map of children
+            s.forEach(x => minDist.set(x, Infinity))
+
+            function d2(a: FabricObject, b: FabricObject) {
+                return Math.pow(a.getX() - b.getX(), 2) + Math.pow(a.getY() - b.getY(), 2)
+            }
+
+            // pick one at random, make it the root
+            let root = s.values().next().value!
+            minDist.set(root, 0)
+
+            for (let i = 0; i < s.size; i++) {
+                const nextToAdd = s
+                    .difference(visited) // only leave vertices that aren't yet in tree
+                    .values().toArray()
+                    // sort by minDist ascending then pick the 1st one (smallest distance to known tree)
+                    .toSorted((a, b) => minDist.get(a)! - minDist.get(b)!)[0]
+                visited.add(nextToAdd)
+                const notYetVisited = s.difference(visited)
+                for (let x of notYetVisited) {
+                    if (d2(x, nextToAdd) < minDist.get(x)!) {
+                        // x is closer to nextToAdd than to any other vertex already in the tree
+                        minDist.set(x, d2(x, nextToAdd))
+                        parents.set(x, nextToAdd)
+                    }
+                }
+            }
+
+            // now convert the child->parent map into the reverse parent->children[] map
+            const children = new Map<FabricObject, Set<FabricObject>>()
+            parents.forEach((parent, child) => {
+                children.getOrInsert(parent, new Set()).add(child)
+            })
+
+            if (children.size > 0) {
+                msts.add(children)
+            }
+        }
+
+        return msts
     },
 
     debugGetCurrentlyHittingComponents(): Set<FabricObject> {
