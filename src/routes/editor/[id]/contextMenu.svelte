@@ -2,13 +2,14 @@
     import {Canvas, Path} from "fabric";
     import {addDeviceToCanvas, onSolderAdded} from "$lib/editor";
     import type {ContextMenuEntry} from "./contextMenu";
+    import {type Pane} from "tweakpane";
 
     let popoverEl: HTMLElement;
 
     let {options, canvas, paramsPane}: {
         options: ContextMenuEntry[],
         canvas: Canvas,
-        paramsPane: HTMLElement
+        paramsPane: Pane
     } = $props();
     let lastShowEvent: MouseEvent | null = $state(null)
 

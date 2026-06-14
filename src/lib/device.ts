@@ -1,6 +1,6 @@
 import {Circle, classRegistry, FabricObject, type FabricObjectProps, FabricText, Group, Rect, util} from "fabric";
 import {collisionManager} from "./collisions";
-import {ListBladeApi, Pane, TextBladeApi} from "tweakpane";
+import {type FolderApi, ListBladeApi, TextBladeApi} from "tweakpane";
 import {ButtonGridApi} from "@tweakpane/plugin-essentials";
 import {type ContextMenuEntry} from "../routes/editor/[id]/contextMenu";
 
@@ -98,7 +98,7 @@ export abstract class Device extends Group {
         this.setElements()
     }
 
-    setupParametersPane(pane: Pane): void {
+    setupParametersPane(pane: FolderApi): void {
     }
 
     save(): SerializedExtraData {
@@ -210,7 +210,7 @@ export class Passive extends Device {
         this.#label = label
     }
 
-    setupParametersPane(pane: Pane) {
+    setupParametersPane(pane: FolderApi) {
         (pane.addBlade({
             view: "text",
             label: "tag",
@@ -330,7 +330,7 @@ export class SOIC extends Device {
         this.#pin1Marker = pin1Marker
     }
 
-    override setupParametersPane(pane: Pane) {
+    override setupParametersPane(pane: FolderApi) {
         // @ts-expect-error doesn't recognize "tag" as keyof this
         pane.addBinding(this, "tag").on("change", () => {
             this.#label.set("text", this.tag)
@@ -494,7 +494,7 @@ export class DIP extends Device {
         this.#pin1Marker = pin1Marker
     }
 
-    override setupParametersPane(pane: Pane) {
+    override setupParametersPane(pane: FolderApi) {
         // @ts-expect-error doesn't recognize "tag" as keyof this
         pane.addBinding(this, "tag").on("change", () => {
             this.#label.set("text", this.tag)
@@ -643,7 +643,7 @@ export class SOT23 extends Device {
         this.#label = label
     }
 
-    override setupParametersPane(pane: Pane) {
+    override setupParametersPane(pane: FolderApi) {
         // @ts-expect-error doesn't recognize "tag" as keyof this
         pane.addBinding(this, "tag").on("change", () => {
             this.#label.set("text", this.tag)
@@ -805,7 +805,7 @@ export class Connector extends Device {
         this.canvas?.requestRenderAll()
     }
 
-    override setupParametersPane(pane: Pane) {
+    override setupParametersPane(pane: FolderApi) {
         // @ts-expect-error doesn't recognize "numPins" as keyof this
         pane.addBinding(this, "numPins", {
             min: 2, max: 40, step: 1,

@@ -15,14 +15,27 @@
     import {beforeNavigate} from "$app/navigation";
     import {onMount} from "svelte";
     import {type DebugOptions, setupDebugPane, setupDebugViews} from "$lib/debug";
-    import {Pane} from "tweakpane";
+    import {type FolderApi, Pane} from "tweakpane";
     import * as EssentialsPlugin from "@tweakpane/plugin-essentials";
 
     let {data}: PageProps = $props();
     let name = $state(data.name);
 
+    let paramsPaneEl: HTMLElement;
+    let paramsPane = $state<Pane>();
+    let paramsPaneVisible = $state(false)
+    onMount(() => {
+        paramsPane = new Pane({container: paramsPaneEl, title: "Config"})
+        paramsPane.registerPlugin(EssentialsPlugin)
+        paramsPane.hidden = true
+        paramsPane.controller.rackController.rack.emitter.on("layout", (ev) => {
+            const anyVisible = ev.sender.children.some(x => x.viewProps.value("hidden").rawValue === false && !x.viewProps.value("disposed").rawValue)
+            paramsPane!.hidden = !anyVisible
+            paramsPaneVisible = !paramsPane!.hidden
+        })
+    })
+
     let canvasEl: HTMLCanvasElement;
-    let paramsPane: HTMLElement;
     let canvas: Canvas | null = $state(null)
     let isDirty = $state(false)
     onMount(() => {
@@ -35,7 +48,7 @@
         if (data.data.length === 0) {
             initializeEmptyDesign(canvas)
         } else {
-            loadDataIntoCanvas(canvas, data.data, paramsPane)
+            loadDataIntoCanvas(canvas, data.data, paramsPane!)
         }
         // only hook this once loaded, otherwise the act of loading/init'ing the canvas already marks it as dirty
         return hookChangeNotifier(canvas, () => {
@@ -77,11 +90,10 @@
         canvas.requestRenderAll()
         return debugRenderDisposer
     })
+    let debugPane: FolderApi
     onMount(() => {
         if (!paramsPane || !canvas) return;
-        const debugPane = new Pane({container: paramsPane, title: "Debug"})
-        debugPane.hidden = true
-        debugPane.registerPlugin(EssentialsPlugin)
+        debugPane = paramsPane.addFolder({hidden: true, title: "Debug"})
         setupDebugPane(debugPane, canvas, drawDebugLayers)
         // @ts-expect-error toggleDebug is a custom event emitted on Canvas, so it isn't normally typed
         return canvas.on("toggleDebug", () => {
@@ -110,10 +122,12 @@
     <li>$ → open the debug panel</li>
 </ul>
 
-<div id="tweakpaneControls" bind:this={paramsPane}></div>
-<ContextMenu options={components} canvas={canvas!} paramsPane={paramsPane}/>
-
 <canvas id="editor" bind:this={canvasEl}></canvas>
+
+<!-- these must be below the canvas so they appear on top of it -->
+<button id="tweakpaneOpenButton" onclick={()=>{debugPane!.hidden=false}} hidden={paramsPaneVisible}>⚙</button>
+<div id="tweakpaneControls" bind:this={paramsPaneEl}></div>
+<ContextMenu options={components} canvas={canvas!} paramsPane={paramsPane!}/>
 
 <style>
     /*.persistence-warning {*/
@@ -125,12 +139,40 @@
     #tweakpaneControls {
         position: absolute;
         right: 10px;
-        top: 10px;
+        top: 0;
 
         /* hacky but dev-approved: https://github.com/cocopon/tweakpane/issues/395 */
+
         :global(.tp-rotv) {
             font-size: medium;
+            border-radius: 0 0 var(--bs-br) var(--bs-br);
         }
+    }
+
+    #tweakpaneOpenButton {
+        --bs-bg: var(--tp-base-background-color, hsl(230, 7%, 17%));
+        --bs-br: var(--tp-base-border-radius, 6px);
+        --bs-ff: var(--tp-base-font-family);
+        --bs-sh: var(--tp-base-shadow-color, rgba(0, 0, 0, 0.2));
+        --cnt-bg: var(--tp-container-background-color, rgba(187, 188, 196, 0.1));
+        --cnt-bg-a: var(--tp-container-background-color-active, rgba(187, 188, 196, 0.25));
+        --cnt-bg-f: var(--tp-container-background-color-focus, rgba(187, 188, 196, 0.2));
+        --cnt-bg-h: var(--tp-container-background-color-hover, rgba(187, 188, 196, 0.15));
+        --cnt-fg: var(--tp-container-foreground-color, hsl(230, 7%, 75%));
+
+        position: absolute;
+        top: 0;
+        right: 10px;
+        width: 60px;
+        height: 40px;
+        background-color: var(--bs-bg);
+        color: var(--cnt-fg);
+        border-radius: 0 0 var(--bs-br) var(--bs-br);
+        box-shadow: 0 2px 4px var(--bs-sh);
+        font-family: var(--bs-ff);
+        font-size: x-large;
+        text-align: center;
+        align-content: center;
     }
 
     #editor {

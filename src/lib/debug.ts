@@ -1,7 +1,7 @@
 import type {Canvas, FabricObject} from "fabric";
 import type {Quadtree} from "@timohausmann/quadtree-ts";
 import {collisionManager} from "./collisions";
-import {type Pane} from "tweakpane";
+import {type FolderApi} from "tweakpane";
 import {type FpsGraphBladeApi} from "@tweakpane/plugin-essentials";
 
 export type DebugOptions = {
@@ -96,16 +96,20 @@ export function setupDebugViews(canvas: Canvas, options: DebugOptions) {
     })
 }
 
-export function setupDebugPane(pane: Pane, canvas: Canvas, options: DebugOptions) {
-    pane.addBinding(options, "enableQuadtree");
-    pane.addBinding(options, "enableRatsnest");
-    pane.addBinding(options, "enableCollisions");
+export function setupDebugPane(pane: FolderApi, canvas: Canvas, options: DebugOptions) {
+    pane.addBinding(options, "enableQuadtree", {label: "Quadtree"});
+    pane.addBinding(options, "enableRatsnest", {label: "Nets"});
+    pane.addBinding(options, "enableCollisions", {label: "Collisions"});
 
     const fps = pane.addBlade({
         view: "fpsgraph",
         label: "FPS",
         rows: 3
     }) as FpsGraphBladeApi
+
+    pane.addButton({title: "Close"}).on("click", () => {
+        pane.hidden = true
+    })
 
     pane.on("change", () => canvas?.requestRenderAll())
 

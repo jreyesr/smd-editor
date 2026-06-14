@@ -11,7 +11,6 @@ import {
 import {Device, type SerializedDevice} from "$lib/device";
 import {SP1_50x50, ThroughHoleProtoboard} from "./board";
 import {Pane} from "tweakpane";
-import * as EssentialsPlugin from '@tweakpane/plugin-essentials';
 import {collisionManager} from "$lib/collisions";
 
 
@@ -41,17 +40,16 @@ export function onSolderAdded(canvas: Canvas, path: Path) {
 }
 
 
-export function addDeviceToCanvas(canvas: Canvas, dev: Device | Path | SP1_50x50 | ThroughHoleProtoboard, paramsPaneEl: HTMLElement) {
+export function addDeviceToCanvas(canvas: Canvas, dev: Device | Path | SP1_50x50 | ThroughHoleProtoboard, paramsPane: Pane) {
     canvas.add(dev)
 
     if (dev instanceof Device || dev instanceof SP1_50x50 || dev instanceof ThroughHoleProtoboard) {
         dev.fire("moving") // to prod the collision detector, does nothing for the Board devices
         dev.on("mousedblclick", function () {
-            const paramsPane = new Pane({container: paramsPaneEl, title: dev.type})
-            paramsPane.registerPlugin(EssentialsPlugin)
-            dev.setupParametersPane(paramsPane)
+            const deviceParamsFolder = paramsPane.addFolder({title: dev.type})
+            dev.setupParametersPane(deviceParamsFolder)
             dev.once("deselected", function () {
-                paramsPane.dispose()
+                deviceParamsFolder.dispose()
             })
         })
     } else if (dev instanceof Path) {
@@ -86,7 +84,7 @@ export function takeCanvasScreenshot(canvas: Canvas) {
     })
 }
 
-export function loadDataIntoCanvas(canvas: Canvas, data: SerializedDevice[], paramsPane: HTMLElement) {
+export function loadDataIntoCanvas(canvas: Canvas, data: SerializedDevice[], paramsPane: Pane) {
     for (let storedObject of data) {
         const klass: (typeof Device | typeof Path | typeof SP1_50x50 | typeof ThroughHoleProtoboard) = classRegistry.getClass(storedObject.type)
         let refreshedObject: Device | Path | SP1_50x50 | ThroughHoleProtoboard

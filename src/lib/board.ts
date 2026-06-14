@@ -1,7 +1,7 @@
 import {Circle, classRegistry, Group, Rect} from "fabric";
 import {mil} from "./device";
 import {collisionManager} from "./collisions";
-import {Pane} from "tweakpane";
+import {type FolderApi} from "tweakpane";
 
 
 export class SP1_50x50 extends Group {
@@ -44,7 +44,7 @@ export class SP1_50x50 extends Group {
         });
     }
 
-    setupParametersPane(pane: Pane): void {
+    setupParametersPane(pane: FolderApi): void {
         // pane.addBinding(this, "numPadsX", {
         //     min: 5,
         //     max: 100,
@@ -110,7 +110,7 @@ export class ThroughHoleProtoboard extends Group {
         });
     }
 
-    setupParametersPane(pane: Pane): void {
+    setupParametersPane(pane: FolderApi): void {
         // pane.addBinding(this, "numPadsX", {
         //     min: 5
         // }).on("change", ev => {
