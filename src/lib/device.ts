@@ -815,7 +815,10 @@ export class Connector extends Device {
 
         // @ts-expect-error doesn't recognize "pinPitch" as keyof this
         pane.addBinding(this, "pinPitch", {
-            min: 50, max: 100, step: 50
+            options: {
+                "50 mil": 50 * mil,
+                "100 mil": 100 * mil,
+            }
         }).on("change", () => {
             this.redraw()
         })
