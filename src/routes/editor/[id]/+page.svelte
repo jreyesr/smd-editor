@@ -5,7 +5,6 @@
         hookChangeNotifier,
         initializeEmptyDesign,
         loadDataIntoCanvas,
-        setupDebugViews,
         setupEditor,
         takeCanvasScreenshot
     } from "$lib/editor";
@@ -15,6 +14,9 @@
     import {saveDesign, updateDesignName} from "$lib/store";
     import {beforeNavigate} from "$app/navigation";
     import {onMount} from "svelte";
+    import {type DebugOptions, setupDebugPane, setupDebugViews} from "$lib/debug";
+    import {Pane} from "tweakpane";
+    import * as EssentialsPlugin from "@tweakpane/plugin-essentials";
 
     let {data}: PageProps = $props();
     let name = $state(data.name);
@@ -68,14 +70,23 @@
         }
     }
 
-    let enableQuadtree = $state(false)
-    let enableRatsnest = $state(false)
-    let enableCollisions = $state(false)
+    let drawDebugLayers = $state<DebugOptions>({enableQuadtree: false, enableRatsnest: false, enableCollisions: false})
     $effect(() => {
         if (!canvas) return;
-        const debugRenderDisposer = setupDebugViews(canvas, enableQuadtree, enableRatsnest, enableCollisions)
+        const debugRenderDisposer = setupDebugViews(canvas, drawDebugLayers)
         canvas.requestRenderAll()
         return debugRenderDisposer
+    })
+    onMount(() => {
+        if (!paramsPane || !canvas) return;
+        const debugPane = new Pane({container: paramsPane, title: "Debug"})
+        debugPane.hidden = true
+        debugPane.registerPlugin(EssentialsPlugin)
+        setupDebugPane(debugPane, canvas, drawDebugLayers)
+        // @ts-expect-error toggleDebug is a custom event emitted on Canvas, so it isn't normally typed
+        return canvas.on("toggleDebug", () => {
+            debugPane.hidden = !debugPane.hidden
+        })
     })
 </script>
 
@@ -96,9 +107,7 @@
     <li>R/⇧+R → rotate ↻/↺ resp.</li>
     <li>Del/Bksp → delete</li>
     <li>WASD → move</li>
-    <li><label><input type="checkbox" bind:checked={enableQuadtree}>quadtree</label></li>
-    <li><label><input type="checkbox" bind:checked={enableRatsnest}>ratsnest</label></li>
-    <li><label><input type="checkbox" bind:checked={enableCollisions}>collisions</label></li>
+    <li>º → open the debug panel</li>
 </ul>
 
 <div id="tweakpaneControls" bind:this={paramsPane}></div>
@@ -117,6 +126,11 @@
         position: absolute;
         right: 10px;
         top: 10px;
+
+        /* hacky but dev-approved: https://github.com/cocopon/tweakpane/issues/395 */
+        :global(.tp-rotv) {
+            font-size: medium;
+        }
     }
 
     #editor {
