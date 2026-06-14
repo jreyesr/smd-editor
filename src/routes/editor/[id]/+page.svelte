@@ -173,6 +173,11 @@
         font-size: x-large;
         text-align: center;
         align-content: center;
+        cursor: pointer;
+
+        &:hover {
+            background-color: color-mix(in srgb, var(--bs-bg) 85%, transparent 15%);
+        }
     }
 
     #editor {
