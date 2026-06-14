@@ -107,7 +107,7 @@
     <li>R/⇧+R → rotate ↻/↺ resp.</li>
     <li>Del/Bksp → delete</li>
     <li>WASD → move</li>
-    <li>º → open the debug panel</li>
+    <li>$ → open the debug panel</li>
 </ul>
 
 <div id="tweakpaneControls" bind:this={paramsPane}></div>

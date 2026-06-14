@@ -128,7 +128,7 @@ export function setupEditor(canvasEl: HTMLCanvasElement): Canvas {
     canvas.elements.upper.el.addEventListener("keydown", function (ev) {
         // GLOBAL SHORTCUTS, DON'T REQUIRE AN ELEMENT SELECTED
         switch (ev.key) {
-            case "º":
+            case "$":
                 // @ts-expect-error toggleDebug is a custom event on Canvas
                 canvas.fire("toggleDebug")
                 break

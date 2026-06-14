@@ -7,6 +7,17 @@ The editor looks like this:
 
 ![a screenshot of the editor's UI showing a few components connected with solder lines](public/images/ui.png)
 
+Usage:
+
+* Right-click to open the Devices selector, on which you can add a new device (or a solder line)
+* Drag and drop devices to move them around. Their electrical connectivity (to protoboard pads, solder lines, or other 
+  devices' pins) will be automatically updated
+* For most devices, double-click on them to 
+* Press the Delete or Backspace keys to delete the currently selected device
+* Press the R key to rotate the device 90 degrees clockwise. Press Shift+R to rotate 90 degrees counterclockwise
+* Press the arrow keys or WASD to move the currently selected device. Also hold Shift for larger steps
+* Press the $ key to open a debug menu, where some internal visualizations can be toggled on/off
+
 ## Features
 
 ### Boards
@@ -44,12 +55,16 @@ touch to become electrically connected.
 
 ![a screenshot of the editor showing two solder lines, one already placed and another being drawn](public/images/solder.png)
 
-By toggling the Ratsnest checkbox, you can display lines that connect device pins that are electrically connected. Two 
-pins are connected if they share a board pad, or if they are connected via solder lines. This is equivalent to a 
-"netlist" in a schematic program. Note the pink dashed lines in the image below, they indicate pairs of pins which are
-connected to each other.
+To show all the device pins that are interconnected together, press the $ key to open the hidden debug menu, and then
+enable the Ratsnest checkbox. This will display lines that connect device pins that are electrically connected. Two 
+pins are connected if they physically touch, share a board pad, or they are connected via solder lines. This is equivalent to a 
+"netlist" in a schematic program. Note the colored dashed lines in the images below, they indicate pins which are
+connected to each other and therefore belong to the same net (assumed to always be at the same voltage at all times, 
+except for transmission line delays, at which point you probably shouldn't be using a protoboard anyway):
 
-![a screenshot of the editor with Ratsnets mode activated, displaying pink lines that join device pins that are electrically connected, either directly or via solder lines](public/images/ratsnest.png)
+![a screenshot of the editor with Ratsnets mode activated, displaying colored lines that join device pins that are electrically connected, either directly or via solder lines](public/images/ratsnest.png)
+
+![a screenshot of another circuit with Ratsnest mode activated, where ](public/images/ratsnest2.png)
 
 ### DEV
 
@@ -62,6 +77,7 @@ Known errors/TODOs:
     * check if it's that the move event fires on the group and doesn't propagate to the individual (Device|Path)s
     - [ ] BUG2 now it works while dragging but colldet breaks after deselecting
 - [ ] BUG repeatedly removing&readding a whole side of pins (for SOIC, DIP, SOT23 packages) messes up side-to-side alignment
+- [ ] BUG component labels (tag) aren't stored if they have changed
 
 - [x] add holes every 4 pads in X, Y
 - [x] readd the through-hole protoboard
@@ -84,7 +100,8 @@ Known errors/TODOs:
 - [ ] undo/redo stack???
 - [ ] netlist-ish features
     - [x] link pin->pin, display ratsnest unless connected via pads/solder
-    * show netlist
+    - [x] euclidean minimum spanning tree for cleanest ratsnest, currently it can jump around
+    * show netlist as text
     * import from some standard netlist format???
     * export to some standard netlist format???
 - [ ] import KiCAD schematic?
