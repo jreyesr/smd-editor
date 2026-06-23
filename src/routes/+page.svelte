@@ -1,6 +1,12 @@
 <script lang="ts">
     import type {PageProps} from './$types';
-    import {createDesign, deleteDesign as deleteDesignStore, type StoredDesign} from "$lib/store";
+    import {
+        createDesign,
+        deleteDesign as deleteDesignStore,
+        type ExportedDesign,
+        getDesign, importDesign,
+        type StoredDesign
+    } from "$lib/store";
     import {goto, invalidateAll} from "$app/navigation";
 
     let {data}: PageProps = $props();
@@ -16,6 +22,34 @@
             await invalidateAll()
         }
     }
+
+    async function exportDesign(id: string) {
+        const design = (await getDesign(id))
+        const toExport: ExportedDesign = {name: design.name, data: design.data}
+
+        const link = document.createElement('a')
+        document.body.append(link)
+        link.download = `${toExport.name}.json`
+        link.href = URL.createObjectURL(new Blob([JSON.stringify(toExport)]))
+        link.click()
+        link.remove()
+    }
+
+    let filesToImport = $state<FileList>()
+    $effect(() => {
+        async function importSingleDesign(f: File) {
+            const fileData = JSON.parse(await f.text())
+            return await importDesign(fileData as unknown as ExportedDesign)
+        }
+
+        if (filesToImport && filesToImport.length > 0) {
+            const importPromises = new Array<Promise<string>>()
+            for (const file of (filesToImport as unknown as File[])) {
+                importPromises.push(importSingleDesign(file))
+            }
+            Promise.allSettled(importPromises).then(() => invalidateAll())
+        }
+    })
 </script>
 
 {#snippet designCard(designData: StoredDesign)}
@@ -30,8 +64,11 @@
                     <small>({designData.data.filter(el => el.type.startsWith("device/")).length}
                         elements)</small>
                     <button class="lucide--trash card-secondary-action"
-                            onclick={()=>deleteDesign(designData.id.toString())}
+                            onclick={() => deleteDesign(designData.id.toString())}
                             title="Delete Design"></button>
+                    <button class="lucide--hard-drive-download card-secondary-action"
+                            onclick={() => exportDesign(designData.id.toString())}
+                            title="Export Design"></button>
                 </p>
             </div>
         </div>
@@ -53,6 +90,9 @@
                 <button class="card-primary-action"
                         onclick={addDesign}> + Create new design...
                 </button>
+                <br>
+                or <label for="fileImport">import file(s)</label>
+                <input id="fileImport" type="file" multiple accept="application/json" bind:files={filesToImport}/>
             </p>
         </div>
     </li>
@@ -93,7 +133,6 @@
         }
 
         & .thumbnail {
-            z-index: 0;
             width: 100%;
         }
 
@@ -148,7 +187,23 @@
         & .card-primary-action {
             border: unset;
             background-color: unset;
-            font-size: unset;
+            font-size: 1.4em;
+        }
+
+        & #fileImport {
+            display: none;
+        }
+
+        & label[for="fileImport"] {
+            position: relative;
+            z-index: 1; /* so it goes above the whole clickable card */
+            text-decoration: underline 3px solid forestgreen;
+            text-decoration-inset: 2px;
+            text-decoration-skip-ink: none;
+
+            &:hover {
+                text-decoration-skip-ink: unset;
+            }
         }
     }
 
@@ -167,6 +222,25 @@
 
         &:hover {
             color: red;
+        }
+    }
+
+    .lucide--hard-drive-download {
+        display: inline-block;
+        width: 1.5em;
+        height: 1.5em;
+        --svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cg fill='none' stroke='black' stroke-linecap='round' stroke-linejoin='round' stroke-width='2'%3E%3Cpath d='M12 2v8m4-4l-4 4l-4-4'/%3E%3Crect width='20' height='8' x='2' y='14' rx='2'/%3E%3Cpath d='M6 18h.01M10 18h.01'/%3E%3C/g%3E%3C/svg%3E");
+        background-color: currentColor;
+        -webkit-mask-image: var(--svg);
+        mask-image: var(--svg);
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-size: 100% 100%;
+        mask-size: 100% 100%;
+
+        &:hover {
+            stroke-width: 3px;
+            color: orange;
         }
     }
 </style>

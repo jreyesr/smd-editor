@@ -7,6 +7,7 @@ export type StoredDesign = {
     data: SerializedDevice[],
     thumbnail?: string,
 }
+export type ExportedDesign = Pick<StoredDesign, "name" | "data">
 
 interface DB extends DBSchema {
     designs: {
@@ -46,6 +47,15 @@ export async function createDesign(): Promise<string> {
         name: "My New Design",
         dateCreated: new Date().toISOString(),
         data: []
+    })).toString()
+}
+
+export async function importDesign(data: ExportedDesign): Promise<string> {
+    const db = await getDB()
+    return (await db.add('designs', {
+        name: data.name,
+        dateCreated: new Date().toISOString(),
+        data: data.data
     })).toString()
 }
 
