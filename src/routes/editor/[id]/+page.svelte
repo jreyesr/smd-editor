@@ -11,7 +11,7 @@
     import {type Canvas} from "fabric";
     import ContextMenu from './contextMenu.svelte';
     import {components} from "$lib/device";
-    import {saveDesign, updateDesignName} from "$lib/store";
+    import {saveDesign, saveDesignScreenshot, updateDesignName} from "$lib/store";
     import {beforeNavigate} from "$app/navigation";
     import {onMount} from "svelte";
     import {type DebugOptions, setupDebugPane, setupDebugViews} from "$lib/debug";
@@ -73,8 +73,10 @@
         isDirty = false
     }
 
-    function updateName(ev: FocusEvent) {
-        updateDesignName(data.id.toString(), (ev.target as HTMLInputElement).value)
+    async function updateName(ev: FocusEvent) {
+        await updateDesignName(data.id.toString(), (ev.target as HTMLInputElement).value)
+        const screenshot = takeCanvasScreenshot(canvas!)
+        await saveDesignScreenshot(data.id.toString(), screenshot)
     }
 
     function updateNameFromKey(ev: KeyboardEvent) {
@@ -102,12 +104,6 @@
     })
 </script>
 
-<!--<div class="persistence-warning">
-    <p><b>WARNING!</b></p>
-    <p>Don't do too much work on this editor! It doesn't currently have any way of saving and restoring data, so
-        anything you do here will be lost on page refresh. You've been warned.</p>
-</div>-->
-
 <h1>
     <input id="name" value={name} onblur={updateName} onkeydown={updateNameFromKey}/>
     <button id="save" onclick={saveCurrentDesign} disabled={!isDirty}>Save</button>
@@ -119,7 +115,7 @@
     <li>R/⇧+R → rotate ↻/↺ resp.</li>
     <li>Del/Bksp → delete</li>
     <li>WASD → move</li>
-    <li>$ → open the debug panel</li>
+    <li>$ → toggle the debug panel</li>
 </ul>
 
 <canvas id="editor" bind:this={canvasEl}></canvas>
@@ -130,20 +126,12 @@
 <ContextMenu options={components} canvas={canvas!} paramsPane={paramsPane!}/>
 
 <style>
-    /*.persistence-warning {*/
-    /*    background-color: orange;*/
-    /*    padding: 1em;*/
-    /*    margin: 1em;*/
-    /*}*/
-
     #tweakpaneControls {
         position: absolute;
         right: 10px;
         top: 0;
 
-        /* hacky but dev-approved: https://github.com/cocopon/tweakpane/issues/395 */
-
-        :global(.tp-rotv) {
+        :global(.tp-rotv) { /* hacky but dev-approved: https://github.com/cocopon/tweakpane/issues/395 */
             font-size: medium;
             border-radius: 0 0 var(--bs-br) var(--bs-br);
         }

@@ -71,6 +71,13 @@ export async function saveDesign(id: string, data: StoredDesign["data"], thumbna
     await db.put("designs", {...currentVersion, data, thumbnail, id: parseInt(id)})
 }
 
+export async function saveDesignScreenshot(id: string, thumbnail: string) {
+    const db = await getDB()
+    const currentVersion = (await db.get('designs', parseInt(id)))!
+
+    await db.put("designs", {...currentVersion, thumbnail, id: parseInt(id)})
+}
+
 export async function updateDesignName(id: string, newName: string) {
     const db = await getDB()
     const currentVersion = (await db.get('designs', parseInt(id)))!
